@@ -1,4 +1,9 @@
-.PHONY: dev api web build test prewarm bench
+.PHONY: run dev api web build test prewarm bench
+
+run:        ## everything in one command: http://localhost:8000
+	test -d .venv || (python3 -m venv .venv && .venv/bin/pip install -q -r backend/requirements.txt)
+	test -f backend/static/index.html || (cd frontend && npm install --no-audit --no-fund && npx ng build)
+	cd backend && ../.venv/bin/uvicorn app.main:app --port 8000
 
 api:        ## backend with auto-reload on :8000
 	cd backend && uvicorn app.main:app --reload --port 8000
