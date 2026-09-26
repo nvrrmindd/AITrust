@@ -12,7 +12,7 @@ from .judge import judge_attack, judge_cited
 from .models import Citation, Claim, ClaimResult, SourceCheck, Summary
 from .sources import SourceText, check_citation
 
-PIPELINE_VERSION = "1.0"
+PIPELINE_VERSION = "1.1"
 
 VERDICT_RU = {
     "supported": "подтверждено",
@@ -92,7 +92,7 @@ async def run(text: str) -> AsyncIterator[dict]:
                 res = await judge_cited(cl, [cit_by_id[i] for i in cl.citation_ids], checks, texts)
             else:
                 hits = await search.gather_evidence(cl.queries)
-                res = await judge_attack(cl, hits)
+                res = await judge_attack(cl, hits, cl.queries)
         except Exception as e:  # noqa: BLE001
             res = ClaimResult(claim_id=cl.id, verdict="unverifiable", mode="cited" if cl.citation_ids else "attack",
                               reason=f"Внутренняя ошибка проверки: {type(e).__name__}.")

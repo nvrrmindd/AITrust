@@ -21,12 +21,13 @@ export interface Claim {
 
 export interface Evidence {
   source_label: string; url?: string | null; citation_id?: string | null; quote: string;
-  quote_verified: boolean; stance: 'supports' | 'contradicts' | 'neutral';
+  quote_verified: boolean; stance: 'supports' | 'contradicts' | 'neutral'; tier?: string | null;
 }
 
 export interface ClaimResult {
   claim_id: string; verdict: Verdict; mode: 'cited' | 'attack'; reason: string; evidence: Evidence[];
   numbers?: { claim_numbers: string[]; source_numbers: string[]; mismatch: boolean } | null; notes: string[];
+  search?: { provider: string; queries: string[]; pages: number; domains: string[] } | null;
 }
 
 export interface Summary {
@@ -49,7 +50,7 @@ export const VERDICT: Record<Verdict, { label: string; short: string; tone: stri
   source_missing: { label: 'Источник не существует', short: 'Нет источника', tone: 'red' },
   contradicted: { label: 'Источник говорит другое', short: 'Противоречит', tone: 'orange' },
   not_in_source: { label: 'В источнике этого нет', short: 'Нет в источнике', tone: 'yellow' },
-  unverifiable: { label: 'Не удалось проверить', short: 'Не проверено', tone: 'grey' },
+  unverifiable: { label: 'Не удалось проверить', short: 'Не подтверждено', tone: 'grey' },
   supported: { label: 'Подтверждено цитатой', short: 'Подтверждено', tone: 'green' },
   pending: { label: 'Проверяем…', short: 'Проверяем', tone: 'pending' },
 };
@@ -60,4 +61,8 @@ export const SOURCE_STATUS: Record<SourceStatus, { label: string; tone: string }
   not_found: { label: 'Не существует', tone: 'red' },
   unreachable: { label: 'Нет доступа', tone: 'grey' },
   unchecked: { label: 'Не проверить', tone: 'grey' },
+};
+
+export const TIER: Record<string, string> = {
+  official: 'официальный или научный источник', reference: 'справочник', media: 'СМИ', other: 'прочий сайт',
 };

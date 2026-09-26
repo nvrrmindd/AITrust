@@ -2,7 +2,7 @@ import { Component, computed, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api } from './api';
 import {
-  Citation, Claim, ClaimResult, Example, PipelineEvent, SOURCE_STATUS, SourceCheck, Summary, VERDICT, Verdict,
+  Citation, Claim, ClaimResult, Example, PipelineEvent, SOURCE_STATUS, SourceCheck, Summary, TIER, VERDICT, Verdict,
 } from './models';
 
 interface Segment { text: string; claim?: Claim; }
@@ -19,12 +19,14 @@ const NUM_RE = /(\d{1,3}(?:[  ]\d{3})+|\d+(?:[.,]\d+)?)\s?(%|процент\w*|
 export class App implements OnInit, OnDestroy {
   readonly VERDICT = VERDICT;
   readonly SOURCE_STATUS = SOURCE_STATUS;
+  readonly TIER = TIER;
   readonly legend: Verdict[] = ['source_missing', 'contradicted', 'not_in_source', 'unverifiable', 'supported'];
 
   // input
   input = signal('');
   examples = signal<Example[]>([]);
   error = signal<string | null>(null);
+  searchProvider = signal<string>('tavily');
   showHow = signal(false);
 
   // report
@@ -47,6 +49,7 @@ export class App implements OnInit, OnDestroy {
   constructor(private api: Api) {}
 
   async ngOnInit() {
+    this.api.health().then(h => h && this.searchProvider.set(h.search));
     this.examples.set(await this.api.examples().catch(() => []));
     const m = location.pathname.match(/^\/r\/([\w-]+)/);
     if (m) await this.openReport(m[1]);

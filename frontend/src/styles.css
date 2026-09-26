@@ -174,6 +174,13 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
 .src-title { width: 100%; color: var(--ink-2); overflow-wrap: anywhere; }
 .src-detail { color: var(--ink-2); flex: 1 1 200px; }
 .notes { margin: 10px 0 0; padding-left: 18px; color: var(--ink-3); font-size: 13.5px; }
+.tier { font-size: 12.5px; color: var(--ink-3); }
+.tier-official, .tier-reference { color: var(--green-fg); }
+.searched { margin-top: 12px; font-size: 13.5px; color: var(--ink-2); }
+.searched summary { cursor: pointer; }
+.searched ul { margin: 6px 0; padding-left: 18px; }
+.searched p { margin: 4px 0 0; overflow-wrap: anywhere; }
+.notice { margin: 10px 0 0; padding: 8px 12px; border-radius: var(--radius-s); background: var(--orange-bg); color: var(--orange-fg); font-size: 13.5px; }
 .tone-warning { margin: 12px 0 0; font-size: 14px; color: var(--orange-fg); }
 .skeleton { display: grid; gap: 8px; margin-top: 8px; }
 .skeleton span { height: 12px; border-radius: 4px; background: var(--grey-bg); animation: pulse 1.4s infinite; }

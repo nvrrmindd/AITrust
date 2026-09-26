@@ -44,6 +44,49 @@ def _norm_citation(raw: dict, idx: int) -> Citation:
     )
 
 
+_REF_LINE = re.compile(r"^\s*\[(\d{1,3})\]\s*(.+)$", re.M)
+_MARKER = re.compile(r"\[(\d{1,3}(?:\s*[,;–-]\s*\d{1,3})*)\]")
+_SENT_TAIL = re.compile(r"[^\n]*?(?:[.!?](?=\s|$)|$)")
+
+
+def _marker_numbers(s: str) -> list[int]:
+    out: list[int] = []
+    for m in _MARKER.finditer(s):
+        for part in re.split(r"\s*[,;]\s*", m.group(1)):
+            ends = [int(x) for x in re.split(r"\s*[–-]\s*", part)]
+            lo, hi = ends[0], ends[-1]
+            out.extend(range(lo, min(hi, lo + 20) + 1))
+    return out
+
+
+def _renumber(citations: list[Citation], text: str) -> dict[str, str]:
+    """The LLM sometimes reuses ids (two sources both "S2"). Give ids from the numbered reference list ([n] -> Sn)
+    when the answer has one, make every id unique, return first-seen old id -> new id."""
+    refs = {int(m.group(1)): m.group(2).lower() for m in _REF_LINE.finditer(text)}
+    used: set[str] = set()
+    old_to_new: dict[str, str] = {}
+    pending: list[Citation] = []
+    for c in citations:
+        n = next((n for n, line in refs.items()
+                  if f"S{n}" not in used and ((c.url and c.url.lower() in line) or (c.doi and c.doi.lower() in line))), None)
+        if n is None:
+            pending.append(c)
+            continue
+        old_to_new.setdefault(c.id, f"S{n}")
+        c.id = f"S{n}"
+        used.add(c.id)
+    k = 0
+    for c in pending:
+        new = c.id if c.id not in used else ""
+        while not new:
+            k += 1
+            new = f"S{k}" if f"S{k}" not in used and k not in refs else ""
+        old_to_new.setdefault(c.id, new)
+        c.id = new
+        used.add(new)
+    return old_to_new
+
+
 async def extract(text: str) -> tuple[list[Claim], list[Citation]]:
     system = EXTRACT_SYSTEM.replace("{max_claims}", str(settings.max_claims))
     data = await llm.complete_json(system, f"Ответ ИИ:\n<<<\n{text}\n>>>", max_tokens=4000)
@@ -67,6 +110,7 @@ async def extract(text: str) -> tuple[list[Claim], list[Citation]]:
             n += 1
             citations.append(Citation(id=f"S{n}", raw=url, kind="web", url=url))
             known_urls.add(url)
+    id_map = _renumber(citations, text)
     ids = {c.id for c in citations}
 
     claims: list[Claim] = []
@@ -77,7 +121,14 @@ async def extract(text: str) -> tuple[list[Claim], list[Citation]]:
             continue
         start, end = locate(span, text)
         tone, markers = certainty(span or ctext)
-        cids = [x for x in (c.get("citation_ids") or []) if x in ids]
+        cids = [id_map.get(x, x) for x in (c.get("citation_ids") or [])]
+        if start >= 0:
+            # explicit [n] markers in the claim's sentence beat whatever the LLM linked
+            tail = _SENT_TAIL.match(text, end)
+            marked = [f"S{n}" for n in _marker_numbers(text[start:tail.end() if tail else end])]
+            if any(m in ids for m in marked):
+                cids = marked
+        cids = list(dict.fromkeys(x for x in cids if x in ids))
         queries = [str(q) for q in (c.get("queries") or []) if str(q).strip()][:3]
         if not cids and not queries:
             queries = [ctext[:120]]

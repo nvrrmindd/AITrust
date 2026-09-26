@@ -67,12 +67,20 @@ class Evidence(BaseModel):
     quote: str
     quote_verified: bool
     stance: Literal["supports", "contradicts", "neutral"]
+    tier: Optional[str] = None
 
 
 class NumberCheck(BaseModel):
     claim_numbers: list[str] = Field(default_factory=list)
     source_numbers: list[str] = Field(default_factory=list)
     mismatch: bool = False
+
+
+class SearchInfo(BaseModel):
+    provider: str
+    queries: list[str] = Field(default_factory=list)
+    pages: int = 0
+    domains: list[str] = Field(default_factory=list)
 
 
 class ClaimResult(BaseModel):
@@ -83,6 +91,7 @@ class ClaimResult(BaseModel):
     evidence: list[Evidence] = Field(default_factory=list)
     numbers: Optional[NumberCheck] = None
     notes: list[str] = Field(default_factory=list)
+    search: Optional[SearchInfo] = None
 
 
 class Summary(BaseModel):

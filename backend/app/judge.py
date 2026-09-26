@@ -6,11 +6,13 @@
 from __future__ import annotations
 
 import logging
+from urllib.parse import urlparse
 
 from . import llm
-from .models import Citation, Claim, ClaimResult, Evidence, NumberCheck, SourceCheck
+from .models import Citation, Claim, ClaimResult, Evidence, NumberCheck, SearchInfo, SourceCheck
 from .prompts import JUDGE_ATTACK_SYSTEM, JUDGE_CITED_SYSTEM
-from .search import Hit
+from .search import TIER_RU, Hit
+from .search import provider as search_provider
 from .sources import SourceText
 from .textutil import chunk, number_mismatch, quote_in_text, rank_passages
 
@@ -122,25 +124,30 @@ async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: So
     return ClaimResult(claim_id=claim.id, verdict=final, mode="cited", reason=reason, evidence=evidence, numbers=numbers, notes=notes)  # type: ignore[arg-type]
 
 
-async def judge_attack(claim: Claim, hits: list[Hit]) -> ClaimResult:
-    """A claim with no source: search for support AND refutation, judge, verify quotes."""
+async def judge_attack(claim: Claim, hits: list[Hit], queries: list[str] | None = None) -> ClaimResult:
+    """No source: search support AND refutation, verify quotes. "Supported" needs a verified quote from an
+    authoritative source (official/scientific/reference) or from >= 2 independent domains."""
+    info = SearchInfo(provider=search_provider(), queries=list(queries or claim.queries), pages=len(hits),
+                      domains=list(dict.fromkeys(h.domain for h in hits))[:8])
     if not hits:
-        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="attack",
-                           reason="ИИ не указал источник, а поиск ничего релевантного не нашёл. Это утверждение ничем не подкреплено.")
+        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="attack", search=info,
+                           reason=f"ИИ не указал источник, а поиск ({_provider_ru(info.provider)}) не нашёл ни одной страницы по теме. "
+                                  "Подтверждений нет — используйте это утверждение с осторожностью.")
     passages: list[tuple[Hit, str]] = []
     for h in hits:
         ch = chunk(h.snippet) or [h.snippet[:900]]
-        for i, _ in rank_passages(claim.text, ch, k=2):
+        for i, _ in rank_passages(claim.text + " " + " ".join(info.queries[:1]), ch, k=3):
             passages.append((h, ch[i]))
-    ranked = rank_passages(claim.text, [p for _, p in passages], k=8)
+    ranked = rank_passages(claim.text, [p for _, p in passages], k=10)
     chosen = [passages[i] for i, _ in ranked]
     block = "\n\n".join(
-        f"[P{n + 1} | {h.domain}{' | найдено запросом-опровержением' if h.adversarial else ''}] {p}" for n, (h, p) in enumerate(chosen)
+        f"[P{n + 1} | {h.domain} | {TIER_RU[h.tier]}{' | найдено запросом-опровержением' if h.adversarial else ''}] {p}"
+        for n, (h, p) in enumerate(chosen)
     )
     try:
-        out = await llm.complete_json(JUDGE_ATTACK_SYSTEM, f"Утверждение: {claim.text}\n\nФрагменты:\n{block}", max_tokens=800)
+        out = await llm.complete_json(JUDGE_ATTACK_SYSTEM, f"Утверждение: {claim.text}\n\nФрагменты:\n{block}", max_tokens=900)
     except llm.LLMError as e:
-        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="attack", reason=f"Сбой модели-судьи: {e}")
+        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="attack", reason=f"Сбой модели-судьи: {e}", search=info)
 
     evidence: list[Evidence] = []
     notes: list[str] = []
@@ -157,28 +164,45 @@ async def judge_attack(claim: Claim, hits: list[Hit]) -> ClaimResult:
             dropped += 1
             continue
         stance = "contradicts" if ev.get("stance") == "contradicts" else "supports"
-        evidence.append(Evidence(source_label=h.title or h.domain, url=h.url, quote=q, quote_verified=True, stance=stance))  # type: ignore[arg-type]
+        evidence.append(Evidence(source_label=h.title or h.domain, url=h.url, quote=q, quote_verified=True, stance=stance, tier=h.tier))  # type: ignore[arg-type]
     if dropped:
         notes.append(f"{dropped} цитат(ы) модели не нашлись в источниках дословно и были отброшены.")
 
     verdict = str(out.get("verdict", "insufficient"))
     reason = str(out.get("reason") or "").strip()
-    has_contra = any(e.stance == "contradicts" for e in evidence)
-    has_support = any(e.stance == "supports" for e in evidence)
+    support = [e for e in evidence if e.stance == "supports"]
+    contra = [e for e in evidence if e.stance == "contradicts"]
+    strong = lambda evs: any(e.tier in ("official", "reference") for e in evs) or len({_dom(e.url or "") for e in evs}) >= 2  # noqa: E731
 
     cn, sn, mismatch = number_mismatch(claim.text, " ".join(e.quote for e in evidence))
     numbers = NumberCheck(claim_numbers=cn, source_numbers=sn[:12], mismatch=mismatch) if cn else None
 
-    if verdict == "contradicted" and has_contra:
+    if verdict == "contradicted" and contra:
         final = "contradicted"
-    elif verdict == "supported" and has_support and not mismatch:
-        final = "supported"
-    elif verdict == "supported" and has_support and mismatch:
+        if not strong(contra):
+            notes.append("Опровержение найдено в одном источнике невысокой надёжности — стоит перепроверить.")
+    elif verdict == "supported" and support and mismatch:
         final = "contradicted"
         notes.append("Найденные источники приводят другие числа.")
+    elif verdict == "supported" and support and strong(support):
+        final = "supported"
+    elif verdict == "supported" and support:
+        final = "unverifiable"
+        reason = "Нашли подтверждение только на одном сайте невысокой надёжности. Этого мало, чтобы считать факт доказанным. " + reason
     else:
         final = "unverifiable"
         if verdict != "insufficient":
             reason = "Модель что-то нашла, но не подтвердила это дословными цитатами. " + reason
-    notes.insert(0, "ИИ не дал источник — мы искали и подтверждения, и опровержения.")
-    return ClaimResult(claim_id=claim.id, verdict=final, mode="attack", reason=reason, evidence=evidence, numbers=numbers, notes=notes)  # type: ignore[arg-type]
+        elif not reason:
+            reason = "На найденных страницах нет ни подтверждения, ни опровержения."
+    notes.insert(0, f"ИИ не дал источник — искали и подтверждения, и опровержения ({_provider_ru(info.provider)}, прочитано страниц: {info.pages}).")
+    return ClaimResult(claim_id=claim.id, verdict=final, mode="attack", reason=reason, evidence=evidence,  # type: ignore[arg-type]
+                       numbers=numbers, notes=notes, search=info)
+
+
+def _dom(url: str) -> str:
+    return (urlparse(url).hostname or "").removeprefix("www.")
+
+
+def _provider_ru(p: str) -> str:
+    return "веб-поиск" if p == "tavily" else "только Википедия"

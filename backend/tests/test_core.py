@@ -198,3 +198,61 @@ def test_attack_mode_invented_quote_is_not_enough(monkeypatch):
         {"passage": "P1", "stance": "contradicts", "quote": "Байконур находится в Кызылординской области"}]})
     r = asyncio.run(judge_attack(Claim(id="C1", text="Байконур находится в Карагандинской области"), hits))
     assert r.verdict == "unverifiable" and not r.evidence
+
+
+def test_search_keywords_keep_ids_and_names():
+    from app.search import keywords
+    kw = keywords("The MITRE ATT&CK identifier for Kerberoasting is T1558.003").split()
+    assert "T1558.003" in kw and "Kerberoasting" in kw and "for" not in kw
+
+
+def test_source_tiers():
+    from app.search import tier_of
+    assert tier_of("attack.mitre.org") == "official"
+    assert tier_of("ru.wikipedia.org") == "reference"
+    assert tier_of("some-seo-blog.com") == "other"
+
+
+MITRE = ("Adversaries may abuse a valid Kerberos ticket-granting ticket (TGT) or sniff network traffic to obtain a ticket-granting "
+         "service (TGS) ticket that may be vulnerable to Brute Force. Kerberoasting is technique T1558.003 in MITRE ATT&CK.")
+
+
+def _attack_supported(monkeypatch, url):
+    from app.judge import judge_attack
+    from app.search import Hit
+    hits = [Hit(url, "Kerberoasting", MITRE, "Kerberoasting T1558.003", False)]
+    _patch_llm(monkeypatch, {"verdict": "supported", "reason": "Совпадает.", "evidence": [
+        {"passage": "P1", "stance": "supports", "quote": "Kerberoasting is technique T1558.003 in MITRE ATT&CK"}]})
+    return asyncio.run(judge_attack(Claim(id="C1", text="Kerberoasting — это техника T1558.003 в MITRE ATT&CK"), hits))
+
+
+def test_attack_supported_by_official_source(monkeypatch):
+    r = _attack_supported(monkeypatch, "https://attack.mitre.org/techniques/T1558/003/")
+    assert r.verdict == "supported" and r.evidence[0].tier == "official" and r.search and r.search.pages == 1
+
+
+def test_attack_single_weak_site_is_not_enough(monkeypatch):
+    r = _attack_supported(monkeypatch, "https://random-blog.net/kerberoasting")
+    assert r.verdict == "unverifiable" and "одном сайте" in r.reason
+
+
+def test_extract_fixes_duplicate_ids_and_links_by_markers(monkeypatch):
+    from app import extract as ex
+    text = ("По данным Tow Center, ИИ-поисковики ошиблись в 60% запросов [1]. Perplexity ошибался в 37% случаев [1].\n\n"
+            "Walters и Wilder (2023) выяснили, что 55% ссылок GPT-3.5 выдуманы [2].\n\n"
+            "[1] https://www.niemanlab.org/2025/03/study/\n"
+            "[2] Walters (2023). https://doi.org/10.1038/s41598-023-41032-5")
+    async def fake(system, user, max_tokens=0):
+        # niemanlab missing from the LLM output: the URL safety net adds it, it must still become S1
+        return {"citations": [{"id": "S2", "url": "https://doi.org/10.1038/s41598-023-41032-5"},
+                              {"id": "S2", "raw": "Walters duplicate"}],
+                "claims": [{"span": "ИИ-поисковики ошиблись в 60% запросов", "text": "a", "citation_ids": []},
+                           {"span": "Perplexity ошибался в 37% случаев", "text": "b", "citation_ids": ["S2"]},
+                           {"span": "55% ссылок GPT-3.5 выдуманы", "text": "c", "citation_ids": ["S2"]}]}
+    monkeypatch.setattr(llm, "complete_json", fake)
+    claims, cits = asyncio.run(ex.extract(text))
+    by_id = {c.id: c for c in cits}
+    assert len(by_id) == len(cits)  # ids unique
+    assert "niemanlab" in by_id["S1"].url and by_id["S2"].doi
+    assert [c.citation_ids for c in claims] == [["S1"], ["S1"], ["S2"]]
+    assert ex._marker_numbers("a [1] b [2, 3] c [4–6]") == [1, 2, 3, 4, 5, 6]

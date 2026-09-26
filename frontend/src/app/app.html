@@ -30,6 +30,9 @@
         <button class="primary" type="button" (click)="run()" [disabled]="input().trim().length < 20">Проверить ответ</button>
       </div>
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+      @if (searchProvider() === 'wikipedia') {
+        <p class="notice">Веб-поиск не подключён: утверждения без источников проверяются только по Википедии.</p>
+      }
     </section>
 
     @if (examples().length) {
@@ -127,7 +130,7 @@
           @let v = r ? r.verdict : 'pending';
           <div class="card tone-{{ VERDICT[v].tone }}">
             <div class="card-verdict">
-              <span class="pill tone-{{ VERDICT[v].tone }}">{{ VERDICT[v].label }}</span>
+              <span class="pill tone-{{ VERDICT[v].tone }}">{{ v === 'unverifiable' && r?.mode === 'attack' ? 'Не подтверждено: доказательств не нашли' : VERDICT[v].label }}</span>
               @if (r?.mode === 'attack') { <span class="mode">ИИ не дал источник — искали сами</span> }
             </div>
             <p class="claim-text">{{ sel.claim.text }}</p>
@@ -153,6 +156,7 @@
                   </blockquote>
                   <figcaption>
                     @if (ev.quote_verified) { <span class="verified">Цитата найдена в тексте дословно</span> }
+                    @if (ev.tier) { <span class="tier tier-{{ ev.tier }}">{{ TIER[ev.tier] }}</span> }
                     <span class="src">
                       {{ ev.stance === 'contradicts' ? 'Опровергает' : ev.stance === 'supports' ? 'Подтверждает' : 'Источник' }}:
                       @if (ev.url) { <a [href]="ev.url" target="_blank" rel="noopener">{{ ev.source_label || host(ev.url) }}</a> }
@@ -171,6 +175,16 @@
                     <span class="src-detail">{{ chk.detail }}</span>
                   }
                 </div>
+              }
+
+              @if (r.search; as sr) {
+                <details class="searched">
+                  <summary>Что искали: запросов {{ sr.queries.length }}, прочитано страниц {{ sr.pages }}</summary>
+                  <ul>
+                    @for (q of sr.queries; track $index) { <li>{{ q }}</li> }
+                  </ul>
+                  @if (sr.domains.length) { <p>Сайты: {{ sr.domains.join(', ') }}</p> }
+                </details>
               }
 
               @if (r.notes.length) {

@@ -10,6 +10,15 @@ export class Api {
     return r.ok ? r.json() : [];
   }
 
+  async health(): Promise<{ ok: boolean; llm_configured: boolean; llm: string; search: string } | null> {
+    try {
+      const r = await fetch(`${this.base}/api/health`);
+      return r.ok ? r.json() : null;
+    } catch {
+      return null;
+    }
+  }
+
   async start(text: string): Promise<{ id: string; cached: boolean }> {
     const r = await fetch(`${this.base}/api/check`, {
       method: 'POST',
