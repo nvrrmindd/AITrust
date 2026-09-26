@@ -7,12 +7,14 @@ import time
 from collections import defaultdict, deque
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from . import store
+from .bibliography import NO_BIBLIOGRAPHY, find_bibliography
 from .config import settings
+from .documents import MAX_BYTES, DocumentError, extract_text
 from .models import CheckRequest
 from .pipeline import PIPELINE_VERSION
 
@@ -22,6 +24,7 @@ app = FastAPI(title="Пруф API", version=PIPELINE_VERSION)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 EXAMPLES_FILE = Path(__file__).resolve().parent.parent / "examples.json"
+SAMPLE_DOCX = Path(__file__).resolve().parent.parent / "examples" / "sample_coursework.docx"
 _hits: dict[str, deque] = defaultdict(deque)
 
 
@@ -78,6 +81,35 @@ async def create_check(body: CheckRequest, request: Request) -> dict:
             raise HTTPException(429, "Слишком много проверок подряд. Подождите немного.")
     job = store.start(text)
     return {"id": job.id, "cached": job.cached}
+
+
+@app.post("/api/check-file")
+async def create_file_check(request: Request, file: UploadFile = File(...)) -> dict:
+    """«Проверить работу перед сдачей»: the whole paper, its reference list first."""
+    data = await file.read(MAX_BYTES + 1)
+    name = Path(file.filename or "работа").name
+    try:
+        text = extract_text(name, data)
+    except DocumentError as e:
+        raise HTTPException(422, str(e)) from e
+    if not find_bibliography(text):
+        raise HTTPException(422, NO_BIBLIOGRAPHY)
+    cached = store._cache_path(store.text_key(text, "document")).exists()
+    if not cached:
+        if not settings.llm_api_key:
+            raise HTTPException(503, "Сервер не настроен: не задан LLM_API_KEY. Попробуйте пример курсовой.")
+        if _rate_limited(_client_ip(request)):
+            raise HTTPException(429, "Слишком много проверок подряд. Подождите немного.")
+    job = store.start(text, filename=name)
+    return {"id": job.id, "cached": job.cached, "filename": name}
+
+
+@app.get("/api/sample-docx", include_in_schema=False)
+def sample_docx():
+    if not SAMPLE_DOCX.exists():
+        raise HTTPException(404, "Пример не найден")
+    return FileResponse(SAMPLE_DOCX, filename="sample_coursework.docx",
+                        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
 
 @app.get("/api/check/{jid}/events")

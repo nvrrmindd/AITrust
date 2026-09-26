@@ -21,6 +21,28 @@
       </p>
     </section>
 
+    <div class="tabs" role="tablist" aria-label="Что проверяем">
+      <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'answer'" [attr.aria-selected]="mode() === 'answer'"
+        (click)="mode.set('answer'); error.set(null)">Ответ ИИ</button>
+      <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'file'" [attr.aria-selected]="mode() === 'file'"
+        (click)="mode.set('file'); error.set(null)">Работа целиком</button>
+    </div>
+
+    @if (mode() === 'file') {
+    <section class="composer" aria-label="Проверка работы перед сдачей">
+      <label class="dropzone" [class.is-drag]="dragging()" [class.is-busy]="uploading()"
+        (dragover)="$event.preventDefault(); dragging.set(true)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
+        <input type="file" [accept]="FILE_FORMATS" (change)="onPick($event)" [disabled]="uploading()">
+        <span class="dz-title">{{ uploading() ? 'Загружаю…' : 'Перетащите файл курсовой или диплома сюда' }}</span>
+        <span class="dz-sub">или нажмите, чтобы выбрать · .docx, .pdf, .txt, .md · до 10 МБ</span>
+      </label>
+      <p class="hint">Проверим каждый источник из списка литературы и утверждения со ссылками на них ([1], [2, с. 15], (Иванов, 2020)).</p>
+      <div class="composer-foot">
+        <button class="ghost" type="button" (click)="runSample()" [disabled]="uploading()">Попробовать на примере курсовой (DOCX)</button>
+      </div>
+      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    </section>
+    } @else {
     <section class="composer" aria-label="Проверка ответа">
       <label for="answer" class="composer-label">Ответ ИИ</label>
       <textarea id="answer" rows="10" [ngModel]="input()" (ngModelChange)="input.set($event)"
@@ -34,8 +56,9 @@
         <p class="notice">Веб-поиск не подключён: утверждения без источников проверяются только по Википедии.</p>
       }
     </section>
+    }
 
-    @if (examples().length) {
+    @if (mode() === 'answer' && examples().length) {
       <section class="examples" aria-label="Примеры">
         <h2>Или возьмите готовый ответ</h2>
         <div class="example-list">
@@ -68,7 +91,32 @@
 
 @if (view() === 'result') {
   <main class="report">
+    @if (doc(); as d) {
+      <section class="print-only print-meta">
+        <div>
+          <p class="pm-brand">Пруф — проверка источников</p>
+          <p><b>Файл:</b> {{ d.filename }}</p>
+          <p><b>Дата проверки:</b> {{ checkedAt(d.checked_at) }}</p>
+          <p><b>Отчёт:</b> {{ reportUrl() }}</p>
+          <p class="pm-caption">Отчёт можно проверить по ссылке</p>
+        </div>
+        @if (qr()) { <img class="pm-qr" [src]="qr()" alt="QR-код ссылки на отчёт" width="120" height="120"> }
+      </section>
+    }
     <section class="verdict-bar" [class.is-running]="running()">
+      @if (doc(); as d) {
+        @let sc = liveScore();
+        <div class="doc-score">
+          <span class="doc-file">{{ d.filename }}</span>
+          <p class="score-big">Достоверность источников: <b>{{ sc.verified }} из {{ sc.total }}</b></p>
+          <p class="score-sub">
+            Выдумано: <b [class.bad]="sc.fabricated">{{ sc.fabricated }}</b>,
+            искажено: <b [class.warn]="sc.distorted">{{ sc.distorted }}</b>,
+            нет доступа: <b>{{ sc.unreachable }}</b>
+            @if (!score() && bib().length) { <span class="meta"> · проверено {{ bibChecked() }} из {{ bib().length }}</span> }
+          </p>
+        </div>
+      }
       @if (summary(); as s) {
         <h1 class="headline">{{ s.headline }}</h1>
       } @else {
@@ -86,6 +134,7 @@
           @if (summary(); as s) {
             <span class="meta">{{ claims().length }} утверждений, {{ citations().length }} источников, {{ seconds(s.duration_ms) }} с{{ cached() ? ' (сохранённая проверка)' : '' }}</span>
             <button class="ghost" type="button" (click)="share()">{{ copied() ? 'Ссылка скопирована' : 'Поделиться отчётом' }}</button>
+            @if (doc()) { <button class="primary" type="button" (click)="printReport()">Скачать отчёт PDF</button> }
           } @else if (progress().total) {
             <span class="meta">Проверено {{ progress().done }} из {{ progress().total }}</span>
           }
@@ -99,10 +148,62 @@
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
     </section>
 
+    @if (doc() && bib().length) {
+      <section class="panel bib-panel">
+        <h2>Список литературы</h2>
+        <div class="bib-scroll">
+          <table class="bib-table">
+            <thead><tr><th>№</th><th>Ссылка в работе</th><th>Статус</th><th>Объяснение</th><th>Найденная работа</th></tr></thead>
+            <tbody>
+              @for (b of bib(); track b.id) {
+                @let chk = b.check;
+                <tr [class.row-bad]="chk?.status === 'not_found'" [class.row-warn]="chk?.status === 'mismatch'">
+                  <td class="bib-n">{{ b.n }}</td>
+                  <td class="bib-raw">{{ b.raw }}</td>
+                  <td>
+                    @if (chk) { <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ SOURCE_STATUS[chk.status].label }}</span> }
+                    @else { <span class="pill small tone-pending">Проверяем</span> }
+                  </td>
+                  <td class="bib-why">
+                    @if (chk) {
+                      {{ chk.detail }}
+                      @if (chk.differences.length) {
+                        <ul class="diffs">@for (d of chk.differences; track $index) { <li>{{ d }}</li> }</ul>
+                      }
+                      @if (chk.status === 'not_found') {
+                        @let works = replacements()[b.id];
+                        @if (works?.length) {
+                          <span class="bib-repl">Реальная работа по теме:
+                            @if (works![0].url) { <a [href]="works![0].url" target="_blank" rel="noopener">{{ works![0].title }}</a> }
+                            @else { {{ works![0].title }} }
+                            ({{ works![0].year }})
+                            <button type="button" class="ghost small no-print" (click)="copyRef(works![0], 'gost', b.id + ':gost')">
+                              {{ copiedRef() === b.id + ':gost' ? 'Скопировано' : 'ГОСТ' }}
+                            </button>
+                          </span>
+                        }
+                      }
+                    }
+                  </td>
+                  <td class="bib-found">
+                    @if (chk?.matched?.url && chk?.status !== 'not_found') {
+                      <a [href]="chk!.matched!.url" target="_blank" rel="noopener">{{ chk!.matched!.title || host(chk!.matched!.url) }}</a>
+                    } @else if (chk?.status === 'exists' && b.citation.url) {
+                      <a [href]="b.citation.url" target="_blank" rel="noopener">{{ host(b.citation.url) }}</a>
+                    } @else { <span class="muted">—</span> }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
     <div class="workspace">
-      <article class="doc" aria-label="Ответ ИИ с разметкой">
+      <article class="doc" aria-label="Текст с разметкой">
         <div class="doc-head">
-          <h2>Ответ ИИ</h2>
+          <h2>{{ doc() ? 'Утверждения со ссылками в тексте работы' : 'Ответ ИИ' }}</h2>
           <span class="doc-hint">Нажмите на подсвеченное утверждение</span>
         </div>
         <div class="doc-body">
@@ -205,7 +306,7 @@
       </aside>
     </div>
 
-    @if (citations().length) {
+    @if (citations().length && !doc()) {
       <section class="panel sources">
         <h2>Источники из ответа</h2>
         <ul class="source-list">

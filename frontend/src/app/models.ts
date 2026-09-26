@@ -46,6 +46,9 @@ export type PipelineEvent =
   | { type: 'extracted'; claims: Claim[]; citations: Citation[] }
   | { type: 'source'; check: SourceCheck }
   | { type: 'claim'; result: ClaimResult }
+  | { type: 'document'; filename: string; chars: number; checked_at: string; text: string }
+  | { type: 'bibliography'; items: BibItem[] }
+  | { type: 'score'; score: Score }
   | { type: 'replacements'; citation_id: string; claim_id?: string | null; works: Replacement[] }
   | { type: 'done'; summary: Summary }
   | { type: 'cached' }
@@ -73,3 +76,12 @@ export const SOURCE_STATUS: Record<SourceStatus, { label: string; tone: string }
 export const TIER: Record<string, string> = {
   official: 'официальный или научный источник', reference: 'справочник', media: 'СМИ', other: 'прочий сайт',
 };
+
+/** «Работа целиком»: one entry of the paper's reference list. */
+export interface BibItem { n: number; id: string; raw: string; citation: Citation; check: SourceCheck | null; }
+
+export interface Score { verified: number; total: number; fabricated: number; distorted: number; unreachable: number; }
+
+export interface DocumentMeta { filename: string; chars: number; checked_at: string; }
+
+export const FILE_FORMATS = '.docx,.pdf,.txt,.md';

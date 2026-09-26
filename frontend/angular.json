@@ -55,7 +55,10 @@
             "outputPath": {
               "base": "../backend/static",
               "browser": ""
-            }
+            },
+            "allowedCommonJsDependencies": [
+              "qrcode"
+            ]
           },
           "configurations": {
             "production": {

@@ -20,6 +20,7 @@ class Job:
     events: list[dict] = field(default_factory=list)
     done: bool = False
     cached: bool = False
+    filename: Optional[str] = None  # set for «Работа целиком» (uploaded paper)
     created: float = field(default_factory=time.time)
     cond: asyncio.Condition = field(default_factory=asyncio.Condition)
 
@@ -27,8 +28,13 @@ class Job:
 _jobs: dict[str, Job] = {}
 
 
-def text_key(text: str) -> str:
-    return hashlib.sha256(f"{PIPELINE_VERSION}\n{text.strip()}".encode()).hexdigest()[:24]
+def text_key(text: str, mode: str = "") -> str:
+    prefix = f"{PIPELINE_VERSION}\n" + (f"{mode}\n" if mode else "")
+    return hashlib.sha256(f"{prefix}{text.strip()}".encode()).hexdigest()[:24]
+
+
+def _key(job: "Job") -> str:
+    return text_key(job.text, "document" if job.filename else "")
 
 
 def _cache_path(key: str):
@@ -40,27 +46,27 @@ def _report_path(rid: str):
 
 
 def _save_report(job: Job) -> None:
-    payload = {"id": job.id, "text": job.text, "events": job.events, "created": job.created}
+    payload = {"id": job.id, "text": job.text, "events": job.events, "created": job.created, "filename": job.filename}
     _report_path(job.id).write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     if not any(e["type"] == "error" for e in job.events):
-        _cache_path(text_key(job.text)).write_text(json.dumps(job.events, ensure_ascii=False), encoding="utf-8")
+        _cache_path(_key(job)).write_text(json.dumps(job.events, ensure_ascii=False), encoding="utf-8")
 
 
 def load_report(rid: str) -> Optional[dict]:
     if rid in _jobs and _jobs[rid].done:
         j = _jobs[rid]
-        return {"id": j.id, "text": j.text, "events": j.events, "created": j.created}
+        return {"id": j.id, "text": j.text, "events": j.events, "created": j.created, "filename": j.filename}
     p = _report_path(rid)
     if p.exists() and rid.replace("-", "").replace("_", "").isalnum():
         return json.loads(p.read_text(encoding="utf-8"))
     return None
 
 
-def start(text: str) -> Job:
+def start(text: str, filename: Optional[str] = None) -> Job:
     jid = secrets.token_urlsafe(6)
-    job = Job(id=jid, text=text)
+    job = Job(id=jid, text=text, filename=filename)
     _jobs[jid] = job
-    cached = _cache_path(text_key(text))
+    cached = _cache_path(_key(job))
     if cached.exists():
         job.events = json.loads(cached.read_text(encoding="utf-8"))
         job.done = job.cached = True
@@ -73,7 +79,12 @@ def start(text: str) -> Job:
 
 async def _run(job: Job) -> None:
     try:
-        async for ev in run(job.text):
+        if job.filename:
+            from .bibliography import run_document
+            events = run_document(job.text, job.filename)
+        else:
+            events = run(job.text)
+        async for ev in events:
             async with job.cond:
                 job.events.append(ev)
                 job.cond.notify_all()
@@ -101,7 +112,7 @@ async def stream(jid: str) -> AsyncIterator[dict]:
         # replay of a REAL earlier run of the same text, paced so the UI can animate
         yield {"type": "cached"}
         for ev in job.events:
-            if ev["type"] in ("claim", "source"):
+            if ev["type"] in ("claim", "source") or (ev["type"] == "bibliography" and len(ev.get("items", [])) == 1):
                 await asyncio.sleep(0.35)
             yield ev
         return

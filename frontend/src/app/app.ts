@@ -1,9 +1,10 @@
 import { Component, computed, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api } from './api';
+import QRCode from 'qrcode';
 import { apa, gost } from './cite';
 import {
-  Citation, Claim, ClaimResult, Example, PipelineEvent, Replacement, SOURCE_STATUS, SourceCheck, Summary, TIER, VERDICT, Verdict,
+  Citation, Claim, ClaimResult, Example, PipelineEvent, Replacement, SOURCE_STATUS, SourceCheck, Summary, TIER, VERDICT, Verdict, BibItem, DocumentMeta, FILE_FORMATS, Score,
 } from './models';
 
 interface Segment { text: string; claim?: Claim; }
@@ -29,6 +30,10 @@ export class App implements OnInit, OnDestroy {
   error = signal<string | null>(null);
   searchProvider = signal<string>('tavily');
   showHow = signal(false);
+  mode = signal<'answer' | 'file'>('answer');
+  dragging = signal(false);
+  uploading = signal(false);
+  readonly FILE_FORMATS = FILE_FORMATS;
 
   // report
   view = signal<'input' | 'result'>('input');
@@ -46,6 +51,12 @@ export class App implements OnInit, OnDestroy {
   summary = signal<Summary | null>(null);
   selectedId = signal<string | null>(null);
   copied = signal(false);
+
+  // «Работа целиком»
+  doc = signal<DocumentMeta | null>(null);
+  bib = signal<BibItem[]>([]);
+  score = signal<Score | null>(null);
+  qr = signal<string>('');
 
   private closeStream: (() => void) | null = null;
 
@@ -125,6 +136,20 @@ export class App implements OnInit, OnDestroy {
     );
   });
 
+  /** Live source score while checks arrive; the server's final `score` event wins. */
+  liveScore = computed<Score>(() => {
+    const s = this.score();
+    if (s) return s;
+    const st = this.bib().map((b) => b.check?.status);
+    const n = (x: string) => st.filter((v) => v === x).length;
+    return { verified: n('exists'), total: st.length, fabricated: n('not_found'), distorted: n('mismatch'),
+             unreachable: n('unreachable') + n('unchecked') };
+  });
+
+  bibChecked = computed(() => this.bib().filter((b) => b.check).length);
+
+  reportUrl = computed(() => (this.reportId() ? `${location.origin}/r/${this.reportId()}` : ''));
+
   claimsForCitation(cid: string): Claim[] { return this.claims().filter((c) => c.citation_ids.includes(cid)); }
 
   citationLabel(cid: string | null | undefined): string {
@@ -157,6 +182,70 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  // ------------------------------------------------------------ «Работа целиком»
+
+  onDrop(ev: DragEvent) {
+    ev.preventDefault();
+    this.dragging.set(false);
+    const f = ev.dataTransfer?.files?.[0];
+    if (f) this.runFile(f);
+  }
+
+  onPick(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const f = input.files?.[0];
+    input.value = '';
+    if (f) this.runFile(f);
+  }
+
+  async runSample() {
+    this.error.set(null);
+    try {
+      await this.runFile(await this.api.sampleDocx());
+    } catch (e) {
+      this.error.set((e as Error).message);
+    }
+  }
+
+  async runFile(file: File) {
+    this.error.set(null);
+    const ext = file.name.toLowerCase().match(/\.[a-z]+$/)?.[0] ?? '';
+    if (!FILE_FORMATS.split(',').includes(ext)) {
+      this.error.set('Неподдерживаемый формат. Загрузите .docx, .pdf, .txt или .md.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      this.error.set('Файл больше 10 МБ.');
+      return;
+    }
+    this.uploading.set(true);
+    try {
+      const { id, cached } = await this.api.checkFile(file);
+      this.begin(id, '', cached);
+      this.stage.set(`Читаю «${file.name}»…`);
+      history.pushState({}, '', `/r/${id}`);
+      this.listen(id);
+    } catch (e) {
+      this.error.set((e as Error).message);
+    } finally {
+      this.uploading.set(false);
+    }
+  }
+
+  printReport() {
+    window.print();
+  }
+
+  private async makeQr() {
+    const url = this.reportUrl();
+    if (!url) return;
+    try {
+      this.qr.set(await QRCode.toDataURL(url, { margin: 1, width: 240 }));
+    } catch {
+      this.qr.set('');
+    }
+  }
+
   private begin(id: string, text: string, cached: boolean) {
     this.closeStream?.();
     this.reportId.set(id);
@@ -167,6 +256,10 @@ export class App implements OnInit, OnDestroy {
     this.checks.set({});
     this.results.set({});
     this.replacements.set({});
+    this.doc.set(null);
+    this.bib.set([]);
+    this.score.set(null);
+    this.qr.set('');
     this.summary.set(null);
     this.selectedId.set(null);
     this.stage.set('Отправляю ответ на проверку…');
@@ -204,6 +297,24 @@ export class App implements OnInit, OnDestroy {
         this.claims.set(e.claims);
         this.citations.set(e.citations);
         this.stage.set(`Нашли ${e.claims.length} утверждений и ${e.citations.length} источников. Проверяем…`);
+        break;
+      case 'document':
+        this.doc.set({ filename: e.filename, chars: e.chars, checked_at: e.checked_at });
+        this.reportText.set(e.text);
+        this.makeQr();
+        break;
+      case 'bibliography': {
+        const byId = new Map(this.bib().map((b) => [b.id, b]));
+        for (const it of e.items) byId.set(it.id, { ...byId.get(it.id), ...it });
+        this.bib.set([...byId.values()].sort((a, b) => a.n - b.n));
+        const withCheck = e.items.filter((it) => it.check);
+        if (withCheck.length) this.checks.update((m) => ({ ...m, ...Object.fromEntries(withCheck.map((it) => [it.id, it.check!])) }));
+        if (!this.citations().length) this.citations.set(e.items.map((it) => it.citation));
+        this.stage.set(`Список литературы: проверено ${this.bibChecked()} из ${this.bib().length}…`);
+        break;
+      }
+      case 'score':
+        this.score.set(e.score);
         break;
       case 'source':
         this.checks.update((m) => ({ ...m, [e.check.citation_id]: e.check }));
@@ -294,6 +405,12 @@ export class App implements OnInit, OnDestroy {
   host(url?: string | null): string {
     if (!url) return '';
     try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
+  }
+
+  checkedAt(iso: string): string {
+    try {
+      return new Date(iso).toLocaleString('ru-RU', { dateStyle: 'long', timeStyle: 'short' });
+    } catch { return iso; }
   }
 
   seconds(ms: number): string { return (ms / 1000).toFixed(ms < 10000 ? 1 : 0).replace('.', ','); }
