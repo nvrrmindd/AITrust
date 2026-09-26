@@ -69,14 +69,17 @@ async def complete_json(system: str, user: str, *, max_tokens: int = 2000) -> An
     if not settings.llm_api_key:
         raise LLMError("LLM_API_KEY is not set")
     last: Exception | None = None
-    for attempt in range(6):
+    for attempt in range(12):  # 429 waits are cheap; other errors stop after 3
         try:
             async with _sem:
                 if settings.llm_provider == "anthropic":
                     text = await _anthropic(system, user, max_tokens)
                 else:
                     text = await _openai_compatible(system, user, max_tokens)
-            return _extract_json(text)
+            data = _extract_json(text)
+            if not isinstance(data, dict):
+                raise LLMError(f"expected a JSON object, got {type(data).__name__}")
+            return data
         except RateLimited as e:
             last = e
             log.warning("LLM rate limited, waiting %.1fs", e.wait)

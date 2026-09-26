@@ -1,6 +1,7 @@
 """Run the example answers through the REAL pipeline and save the results as seed cache.
 
-    cd backend && python -m app.prewarm
+    cd backend && python -m app.prewarm              # all examples
+    cd backend && python -m app.prewarm kazakhstan   # only these ids
 
 The saved runs are committed in backend/seed_cache/ and copied into the cache at startup, so the
 demo examples open instantly even on a fresh free-tier server. They are real runs, replayed —
@@ -11,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import shutil
+import sys
 from pathlib import Path
 
 from .config import settings
@@ -36,6 +38,8 @@ def install_seed_cache() -> int:
 async def main() -> None:
     SEED.mkdir(exist_ok=True)
     examples = json.loads((ROOT / "examples.json").read_text(encoding="utf-8"))
+    if only := set(sys.argv[1:]):
+        examples = [ex for ex in examples if ex["id"] in only]
     for ex in examples:
         print(f"\n=== {ex['id']}: {ex['title']}")
         events = []

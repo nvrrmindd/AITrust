@@ -256,3 +256,12 @@ def test_extract_fixes_duplicate_ids_and_links_by_markers(monkeypatch):
     assert "niemanlab" in by_id["S1"].url and by_id["S2"].doi
     assert [c.citation_ids for c in claims] == [["S1"], ["S1"], ["S2"]]
     assert ex._marker_numbers("a [1] b [2, 3] c [4–6]") == [1, 2, 3, 4, 5, 6]
+
+
+def test_attack_mode_survives_malformed_evidence(monkeypatch):
+    from app.judge import judge_attack
+    from app.search import Hit
+    hits = [Hit("https://ru.wikipedia.org/wiki/X", "X", "Казахстан — крупнейшая страна без выхода к морю.", "q", False)]
+    _patch_llm(monkeypatch, {"verdict": "supported", "reason": "?", "evidence": ["P1", None]})
+    r = asyncio.run(judge_attack(Claim(id="C1", text="Казахстан — крупнейшая страна без выхода к морю"), hits))
+    assert r.verdict == "unverifiable" and not r.evidence

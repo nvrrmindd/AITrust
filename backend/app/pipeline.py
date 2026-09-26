@@ -3,6 +3,7 @@ Results are emitted as events as soon as each piece is ready (the UI lights clai
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from typing import AsyncIterator
 
@@ -13,6 +14,8 @@ from .models import Citation, Claim, ClaimResult, SourceCheck, Summary
 from .sources import SourceText, check_citation
 
 PIPELINE_VERSION = "1.1"
+
+log = logging.getLogger("pruf.pipeline")
 
 VERDICT_RU = {
     "supported": "подтверждено",
@@ -94,6 +97,7 @@ async def run(text: str) -> AsyncIterator[dict]:
                 hits = await search.gather_evidence(cl.queries)
                 res = await judge_attack(cl, hits, cl.queries)
         except Exception as e:  # noqa: BLE001
+            log.exception("claim %s failed", cl.id)
             res = ClaimResult(claim_id=cl.id, verdict="unverifiable", mode="cited" if cl.citation_ids else "attack",
                               reason=f"Внутренняя ошибка проверки: {type(e).__name__}.")
         results.append(res)

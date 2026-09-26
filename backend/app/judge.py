@@ -152,7 +152,12 @@ async def judge_attack(claim: Claim, hits: list[Hit], queries: list[str] | None 
     evidence: list[Evidence] = []
     notes: list[str] = []
     dropped = 0
-    for ev in out.get("evidence") or []:
+    if not isinstance(out, dict):
+        out = {}
+    for ev in out.get("evidence") if isinstance(out.get("evidence"), list) else []:
+        if not isinstance(ev, dict):
+            dropped += 1
+            continue
         try:
             idx = int(str(ev.get("passage", "")).strip("P[] ")) - 1
             h, p = chosen[idx]
