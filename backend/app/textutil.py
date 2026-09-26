@@ -137,8 +137,14 @@ def _is_year(n: str) -> bool:
 
 # ---------------------------------------------------------------- retrieval
 
+def _unit(n: str) -> str:
+    m = re.search(r"(%|млн|млрд|тыс)$", n)
+    return m.group(1) if m else ""
+
+
 def rank_passages(query: str, passages: list[str], k: int = 5) -> list[tuple[int, float]]:
-    """BM25 over stemmed tokens + a bonus for shared numbers. Returns [(index, score)]."""
+    """BM25 over stemmed tokens + a bonus for shared numbers + a smaller bonus for numbers of the same
+    kind (a claim with "40%" should also surface the passage that says "60%"). Returns [(index, score)]."""
     q = tokens(query)
     if not passages or not q:
         return [(i, 0.0) for i in range(min(k, len(passages)))]
@@ -149,6 +155,7 @@ def rank_passages(query: str, passages: list[str], k: int = 5) -> list[tuple[int
     for d in docs:
         df.update(set(d))
     qn = {_bare(x) for x in numbers(query)}
+    qu = {_unit(x) for x in numbers(query)} - {""}
     scores = []
     for i, d in enumerate(docs):
         tf = Counter(d)
@@ -160,8 +167,10 @@ def rank_passages(query: str, passages: list[str], k: int = 5) -> list[tuple[int
             f = tf[term]
             s += idf * f * 2.2 / (f + 1.2 * (0.25 + 0.75 * len(d) / avg))
         if qn:
-            pn = {_bare(x) for x in numbers(passages[i])}
-            s += 1.5 * len(qn & pn)
+            pnums = numbers(passages[i])
+            s += 1.5 * len(qn & {_bare(x) for x in pnums})
+            if qu & {_unit(x) for x in pnums}:
+                s += 2.5  # cross-language claims (ru claim, en source) get little BM25, the number kind carries them
         scores.append((i, s))
     scores.sort(key=lambda x: -x[1])
     return scores[:k]
@@ -171,7 +180,18 @@ def rank_passages(query: str, passages: list[str], k: int = 5) -> list[tuple[int
 
 def quote_in_text(quote: str, text: str, threshold: int = 90) -> bool:
     """The anti-hallucination guard for our own judge: a quote only counts if it is (almost)
-    verbatim in the source. Tolerates whitespace/quote-style differences and tiny OCR noise."""
+    verbatim in the source. Tolerates whitespace/quote-style differences and tiny OCR noise.
+    A quote stitched from pieces ("..." or reordered sentences) counts only if EVERY piece is verbatim."""
+    pieces = [p for p in re.split(r"\s*(?:\.{3}|…)\s*", quote or "") if p.strip()]
+    if len(pieces) > 1:
+        return all(quote_in_text(p, text, threshold) for p in pieces)
+    if _quote_whole(quote, text, threshold):
+        return True
+    sents = [s for s in re.split(r"(?<=[.!?])\s+(?=[A-ZА-ЯЁ])", quote or "") if s.strip()]
+    return len(sents) > 1 and all(len(normalize(s)) >= 12 and _quote_whole(s, text, threshold) for s in sents)
+
+
+def _quote_whole(quote: str, text: str, threshold: int) -> bool:
     q, t = normalize(quote), normalize(text)
     if len(q) < 12:
         return False

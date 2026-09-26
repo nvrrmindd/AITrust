@@ -25,7 +25,7 @@ class RateLimited(LLMError):
 
 
 # Free tiers (Groq: 8k tokens/min) choke on parallel judge calls; keep a small queue.
-_sem = asyncio.Semaphore(2)
+_sem = asyncio.Semaphore(settings.llm_concurrency)
 
 
 def _retry_after(r: httpx.Response) -> float:

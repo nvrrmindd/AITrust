@@ -71,8 +71,8 @@ async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: So
                            reason=f"Не удалось прочитать источник, поэтому честно не выносим вердикт. {why}")
 
     passages = chunk(st.text)
-    top = rank_passages(claim.text, passages, k=6)
-    selected = [passages[i] for i, _ in top]
+    top = rank_passages(claim.text, passages, k=10)
+    selected = [passages[i] for i in sorted(i for i, _ in top)]  # document order reads better than score order
     block = "\n\n".join(f"[P{n + 1}] {p}" for n, p in enumerate(selected))
     user = (
         f"Утверждение: {claim.text}\n\nИсточник: {label}"
@@ -91,6 +91,7 @@ async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: So
 
     quote_ok = bool(quote) and quote_in_text(quote, st.text)
     if quote and not quote_ok:
+        log.warning("claim %s: judge quote not found in source, dropped: %r", claim.id, quote[:200])
         notes.append(QUOTE_DROPPED)
     if quote_ok:
         stance = {"supports": "supports", "contradicts": "contradicts", "partially": "contradicts"}.get(verdict, "neutral")

@@ -52,11 +52,14 @@ class Settings:
     max_text_chars: int = field(default_factory=lambda: int(_env("MAX_TEXT_CHARS", "12000")))
     max_claims: int = field(default_factory=lambda: int(_env("MAX_CLAIMS", "12")))
     rate_limit_per_hour: int = field(default_factory=lambda: int(_env("RATE_LIMIT_PER_HOUR", "30")))
+    llm_concurrency: int = field(default_factory=lambda: int(_env("LLM_CONCURRENCY", "0")))
     http_timeout: float = field(default_factory=lambda: float(_env("HTTP_TIMEOUT", "12")))
 
     def __post_init__(self) -> None:
         if not self.llm_model:
             self.llm_model = _DEFAULT_MODELS.get(self.llm_provider, "gpt-4o-mini")
+        if self.llm_concurrency <= 0:
+            self.llm_concurrency = 1 if self.llm_provider == "groq" else 4
         if not self.llm_base_url:
             self.llm_base_url = _DEFAULT_BASE.get(self.llm_provider, _DEFAULT_BASE["openai"])
         (self.data_dir / "cache").mkdir(parents=True, exist_ok=True)

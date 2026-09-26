@@ -82,7 +82,16 @@ class FetchResult:
 
 
 async def safe_get(url: str, *, check_ssrf: bool = True, headers: Optional[dict] = None) -> FetchResult:
-    """GET with manual redirect handling so each hop is SSRF-checked."""
+    """GET with manual redirect handling so each hop is SSRF-checked. Hard wall-clock limit: httpx timeouts
+    are per read, so a server trickling bytes could otherwise hold a check forever."""
+    try:
+        async with asyncio.timeout(settings.http_timeout * 3):
+            return await _safe_get(url, check_ssrf=check_ssrf, headers=headers)
+    except TimeoutError as e:
+        raise httpx.ReadTimeout(f"too slow: {url}") from e
+
+
+async def _safe_get(url: str, *, check_ssrf: bool, headers: Optional[dict]) -> FetchResult:
     current = url
     async with _sem:
         for _ in range(MAX_REDIRECTS + 1):

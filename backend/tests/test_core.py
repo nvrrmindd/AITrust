@@ -265,3 +265,52 @@ def test_attack_mode_survives_malformed_evidence(monkeypatch):
     _patch_llm(monkeypatch, {"verdict": "supported", "reason": "?", "evidence": ["P1", None]})
     r = asyncio.run(judge_attack(Claim(id="C1", text="Казахстан — крупнейшая страна без выхода к морю"), hits))
     assert r.verdict == "unverifiable" and not r.evidence
+
+
+NIEMAN = [
+    "Last summer, I reported that ChatGPT frequently hallucinated fake URLs to news sites. Research has continued to show that "
+    "these citation issues are chronic across the AI industry. On March 6, researchers at the Tow Center for Digital Journalism "
+    "at Columbia University added new hard numbers.",
+    "For their study, they conducted 200 tests on eight different AI search engines: ChatGPT Search, Perplexity, Perplexity Pro, "
+    "Gemini, DeepSeek Search, Grok-2 Search, Grok-3 Search, and Copilot.",
+    "Each test query provided the search engine with a quote from an article. Across the 1600 test queries, the search engines "
+    "failed to retrieve the correct information more than 60% of the time.",
+    "Perplexity, which brands itself as a tool for research, had the lowest failure rate. Grok-3 Search had the highest failure rate.",
+    "The chatbot, which is available to X Premium+ subscribers, until recently cost $40 per month.",
+    "Another problem outlined by the Tow Center researchers is how confidently these AI search engines are wrong.",
+    "Gemini and Grok 3 were the worst offenders, as the only two chatbots that provided more fabricated links than correct links.",
+    "The Tow Center report comes just as attention is paid to the failure of AI search engines to drive traffic to news publishers.",
+]
+
+
+def test_rank_surfaces_same_quantity_with_other_number_cross_language():
+    # ru claim with "40%", en source says "60%": BM25 alone buries it, the same-unit bonus must bring it up
+    top = rank_passages("По данным Tow Center, ИИ-поисковики дали неверные ответы на 40% запросов", NIEMAN, k=3)
+    assert 2 in [i for i, _ in top]
+
+
+def test_same_quantity_other_number_is_contradicted(monkeypatch):
+    from app.judge import judge_cited
+    text = " ".join(NIEMAN)
+    _patch_llm(monkeypatch, {"verdict": "contradicts", "reason": "В источнике более 60%, а не 40%.",
+                             "quote": "the search engines failed to retrieve the correct information more than 60% of the time"})
+    cit = Citation(id="S2", kind="web", url="https://www.niemanlab.org/x")
+    sc = SourceCheck(citation_id="S2", status="exists", method="http", detail="", text_scope="full")
+    cl = Claim(id="C2", text="ИИ-поисковики дали неверные ответы на 40% запросов", citation_ids=["S2"])
+    r = asyncio.run(judge_cited(cl, [cit], {"S2": sc}, {"S2": SourceText(text, "full", "https://www.niemanlab.org/x")}))
+    assert r.verdict == "contradicted" and "60%" in r.evidence[0].quote and r.numbers and "40%" in r.numbers.claim_numbers
+
+
+def test_quote_with_ellipsis_needs_every_piece_verbatim():
+    src = ("Perplexity had the lowest failure rate, answering incorrectly 37% of the time. "
+           "Meanwhile, Grok-3 Search had the highest failure rate at 94%.")
+    assert quote_in_text("Grok-3 Search had the highest failure rate at 94%. ... Perplexity had the lowest failure rate", src)
+    assert not quote_in_text("Grok-3 Search had the highest failure rate at 94%. ... Perplexity was accurate in 90% of cases", src)
+
+
+def test_reordered_sentences_count_only_if_each_is_verbatim():
+    src = ("Perplexity had the lowest failure rate, answering incorrectly 37% of the time. "
+           "Meanwhile, Grok-3 Search had the highest failure rate at 94%.")
+    assert quote_in_text("Meanwhile, Grok-3 Search had the highest failure rate at 94%. Perplexity had the lowest failure rate, "
+                         "answering incorrectly 37% of the time.", src)
+    assert not quote_in_text("Meanwhile, Grok-3 Search had the highest failure rate at 94%. Perplexity was always right.", src)

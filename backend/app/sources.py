@@ -131,13 +131,30 @@ def pdf_to_text(data: bytes, max_pages: int = 25) -> str:
 
 # ------------------------------------------------------------------ fetchers
 
-async def _wayback(url: str) -> Optional[netsafe.FetchResult]:
-    """Archived copy for sites that block bots (Cloudflare 403 etc.)."""
+async def _mirror(url: str) -> Optional[tuple[str, str, str]]:
+    """Readable copy for sites that block bots (Cloudflare 403 etc.): Jina reader (fast), then the
+    Wayback Machine. Either one can be down, so we try both. Returns (text, title, url_read)."""
+    try:
+        res = await netsafe.safe_get(f"https://r.jina.ai/{url}")
+        raw = res.body.decode("utf-8", "replace") if res.status < 400 else ""
+        title = m.group(1).strip() if (m := re.search(r"^Title:\s*(.+)$", raw, re.M)) else ""
+        body = raw.split("Markdown Content:", 1)[-1]
+        body = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", body)           # images
+        body = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", body)       # links -> their text
+        body = re.sub(r"^[#>*\-\s]+|[*_`]+", "", body, flags=re.M)   # markdown marks
+        if len(body) > 300:
+            return body, title, url
+    except Exception:  # noqa: BLE001
+        pass
     try:
         res = await netsafe.safe_get(f"https://web.archive.org/web/2026id_/{url}")
+        if res.status < 400 and res.body:
+            text, title = html_to_text(res.body, url)
+            if len(text) > 300:
+                return text, title, res.url
     except Exception:  # noqa: BLE001
-        return None
-    return res if res.status < 400 and res.body else None
+        pass
+    return None
 
 
 async def fetch_page(url: str) -> tuple[Optional[SourceCheck], SourceText, str]:
@@ -154,11 +171,10 @@ async def fetch_page(url: str) -> tuple[Optional[SourceCheck], SourceText, str]:
     if res.status in (404, 410):
         return _sc("not_found", "http", f"Страница не существует (HTTP {res.status}). ИИ дал ссылку, которая никуда не ведёт."), SourceText("", "none"), ""
     if res.status >= 400:
-        archived = await _wayback(url)
-        if archived:
-            text, title = html_to_text(archived.body, url)
-            if len(text) > 300:
-                return None, SourceText(text, "full", archived.url), title
+        mirrored = await _mirror(url)
+        if mirrored:
+            text, title, read_url = mirrored
+            return None, SourceText(text, "full", read_url), title
         return _sc("unreachable", "http", f"Сайт не пустил нас (HTTP {res.status}): пейвол или защита от ботов. Это не значит, что источника нет."), SourceText("", "none"), ""
 
     ctype = res.content_type.lower()
