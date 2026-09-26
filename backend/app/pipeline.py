@@ -11,6 +11,7 @@ from . import search
 from .extract import extract
 from .judge import judge_attack, judge_cited
 from .models import Citation, Claim, ClaimResult, SourceCheck, Summary
+from .replacements import find_replacements
 from .sources import SourceText, check_citation
 
 PIPELINE_VERSION = "1.1"
@@ -74,7 +75,7 @@ async def run(text: str) -> AsyncIterator[dict]:
         yield {"type": "done", "summary": s.model_dump()}
         return
 
-    queue: asyncio.Queue[dict] = asyncio.Queue()
+    queue: asyncio.Queue[dict | None] = asyncio.Queue()
     checks: dict[str, SourceCheck] = {}
     texts: dict[str, SourceText] = {}
     results: list[ClaimResult] = []
@@ -82,10 +83,22 @@ async def run(text: str) -> AsyncIterator[dict]:
     source_done: dict[str, asyncio.Event] = {c.id: asyncio.Event() for c in citations}
 
     async def do_source(c: Citation) -> None:
-        sc, st = await check_citation(c)
-        checks[c.id], texts[c.id] = sc, st
-        source_done[c.id].set()
-        await queue.put({"type": "source", "check": sc.model_dump()})
+        try:
+            sc, st = await check_citation(c)
+            checks[c.id], texts[c.id] = sc, st
+            source_done[c.id].set()
+            await queue.put({"type": "source", "check": sc.model_dump()})
+            if sc.status == "not_found":
+                claim = next((cl for cl in claims if c.id in cl.citation_ids), None)
+                try:
+                    reps = await find_replacements(c, claim)
+                except Exception:  # noqa: BLE001
+                    log.exception("replacements for %s failed", c.id)
+                    reps = []
+                await queue.put({"type": "replacements", "citation_id": c.id, "claim_id": claim.id if claim else None,
+                                 "works": [r.model_dump() for r in reps]})
+        finally:
+            await queue.put(None)  # this task is finished
 
     async def do_claim(cl: Claim) -> None:
         try:
@@ -102,14 +115,17 @@ async def run(text: str) -> AsyncIterator[dict]:
                               reason=f"Внутренняя ошибка проверки: {type(e).__name__}.")
         results.append(res)
         await queue.put({"type": "claim", "result": res.model_dump()})
+        await queue.put(None)
 
     yield {"type": "stage", "stage": "verify", "message": "Проверяю источники и ищу опровержения…"}
     tasks = [asyncio.create_task(do_source(c)) for c in citations] + [asyncio.create_task(do_claim(c)) for c in claims]
     pending = len(tasks)
-    while pending:
+    while pending:  # each task emits its events, then None
         ev = await queue.get()
-        pending -= 1
-        yield ev
+        if ev is None:
+            pending -= 1
+        else:
+            yield ev
     await asyncio.gather(*tasks, return_exceptions=True)
 
     s = summarize(claims, list(checks.values()), results, started)

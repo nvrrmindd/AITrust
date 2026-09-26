@@ -48,6 +48,23 @@ class SourceCheck(BaseModel):
     differences: list[str] = Field(default_factory=list)
 
 
+class Replacement(BaseModel):
+    """A real work on the same topic, offered instead of a cited source that does not exist."""
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    year: Optional[int] = None
+    venue: Optional[str] = None
+    doi: Optional[str] = None
+    url: Optional[str] = None
+    abstract: str = ""
+    cited_by_count: int = 0
+    volume: Optional[str] = None
+    issue: Optional[str] = None
+    pages: Optional[str] = None
+    confirmed: bool = False  # the abstract backs the claim with a verified verbatim quote
+    quote: Optional[str] = None
+
+
 class Claim(BaseModel):
     id: str
     text: str

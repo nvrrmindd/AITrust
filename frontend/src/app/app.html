@@ -229,6 +229,48 @@
                   <a class="source-link" [href]="chk.matched!.url" target="_blank" rel="noopener">Открыть: {{ host(chk.matched!.url) }}</a>
                 }
                 <span class="source-method">Как проверено: {{ chk.method }}{{ chk.text_scope === 'abstract' ? ', по аннотации' : chk.text_scope === 'full' ? ', по полному тексту' : '' }}</span>
+                @if (chk.status === 'not_found') {
+                  @let works = replacements()[c.id];
+                  <div class="replacements">
+                    @if (!works) {
+                      <p class="repl-note">{{ running() ? 'Ищем реальные работы по этой теме…' : '' }}</p>
+                    } @else if (!works.length) {
+                      <p class="repl-note">Такой работы нет. Реальных работ по этой теме в OpenAlex не нашли.</p>
+                    } @else {
+                      <h3>Такой работы нет. Реальные работы по этой теме:</h3>
+                      <ul class="repl-list">
+                        @for (w of works; track $index) {
+                          @let key = c.id + ':' + $index;
+                          <li class="repl">
+                            @if (w.url) { <a class="repl-title" [href]="w.url" target="_blank" rel="noopener">{{ w.title }}</a> }
+                            @else { <span class="repl-title">{{ w.title }}</span> }
+                            <span class="repl-meta">
+                              {{ authorsShort(w.authors) }}{{ w.authors.length ? ' · ' : '' }}{{ w.year }}{{ w.venue ? ' · ' + w.venue : '' }}
+                            </span>
+                            @if (w.doi) {
+                              <a class="repl-doi" [href]="'https://doi.org/' + w.doi" target="_blank" rel="noopener">doi.org/{{ w.doi }}</a>
+                            }
+                            @if (w.confirmed) {
+                              <span class="pill small tone-green">Аннотация подтверждает утверждение</span>
+                              @if (w.quote) { <q class="repl-quote">{{ w.quote }}</q> }
+                            } @else {
+                              <span class="pill small tone-grey">Тема похожа, проверьте сами</span>
+                            }
+                            <div class="repl-actions">
+                              <button type="button" class="ghost small" (click)="copyRef(w, 'gost', key + ':gost')">
+                                {{ copiedRef() === key + ':gost' ? 'Скопировано' : 'Скопировать ссылку в формате ГОСТ' }}
+                              </button>
+                              <button type="button" class="ghost small" (click)="copyRef(w, 'apa', key + ':apa')">
+                                {{ copiedRef() === key + ':apa' ? 'Скопировано' : 'в формате APA' }}
+                              </button>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+                      <p class="repl-caption">Прежде чем ссылаться, откройте работу и убедитесь, что она подходит.</p>
+                    }
+                  </div>
+                }
               }
             </li>
           }

@@ -51,6 +51,9 @@ def test_pipeline_end_to_end(monkeypatch):
     respx.get(f"https://doi.org/api/handles/{doi}").mock(return_value=httpx.Response(404, json={"responseCode": 100}))
     respx.get(f"https://api.crossref.org/works/{doi}").mock(return_value=httpx.Response(404))
     respx.get(f"https://api.openalex.org/works/doi:{doi}").mock(return_value=httpx.Response(404))
+    real = {"id": "https://openalex.org/W1", "title": "Undergraduates and chatbot references", "doi": "https://doi.org/10.1000/real.1",
+            "publication_year": 2024, "authorships": [], "cited_by_count": 3}
+    respx.get("https://api.openalex.org/works").mock(return_value=httpx.Response(200, json={"results": [real]}))
 
     async def collect():
         return [ev async for ev in pipeline.run(TEXT)]
@@ -60,6 +63,9 @@ def test_pipeline_end_to_end(monkeypatch):
     assert types[0] == "stage" and "extracted" in types and types[-1] == "done"
     verdicts = {e["result"]["claim_id"]: e["result"]["verdict"] for e in events if e["type"] == "claim"}
     assert verdicts == {"C1": "contradicted", "C2": "source_missing", "C3": "supported"}
+    reps = [e for e in events if e["type"] == "replacements"]
+    assert len(reps) == 1 and reps[0]["citation_id"] == "S2" and reps[0]["claim_id"] == "C2"
+    assert reps[0]["works"][0]["doi"] == "10.1000/real.1" and not reps[0]["works"][0]["confirmed"]
     summary = events[-1]["summary"]
     assert "1 из 2 источников не существуют" in summary["headline"]
     assert summary["danger_zone"] == 2

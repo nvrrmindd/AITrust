@@ -1,8 +1,9 @@
 import { Component, computed, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api } from './api';
+import { apa, gost } from './cite';
 import {
-  Citation, Claim, ClaimResult, Example, PipelineEvent, SOURCE_STATUS, SourceCheck, Summary, TIER, VERDICT, Verdict,
+  Citation, Claim, ClaimResult, Example, PipelineEvent, Replacement, SOURCE_STATUS, SourceCheck, Summary, TIER, VERDICT, Verdict,
 } from './models';
 
 interface Segment { text: string; claim?: Claim; }
@@ -40,6 +41,8 @@ export class App implements OnInit, OnDestroy {
   citations = signal<Citation[]>([]);
   checks = signal<Record<string, SourceCheck>>({});
   results = signal<Record<string, ClaimResult>>({});
+  replacements = signal<Record<string, Replacement[]>>({});
+  copiedRef = signal<string | null>(null);
   summary = signal<Summary | null>(null);
   selectedId = signal<string | null>(null);
   copied = signal(false);
@@ -163,6 +166,7 @@ export class App implements OnInit, OnDestroy {
     this.citations.set([]);
     this.checks.set({});
     this.results.set({});
+    this.replacements.set({});
     this.summary.set(null);
     this.selectedId.set(null);
     this.stage.set('Отправляю ответ на проверку…');
@@ -203,6 +207,9 @@ export class App implements OnInit, OnDestroy {
         break;
       case 'source':
         this.checks.update((m) => ({ ...m, [e.check.citation_id]: e.check }));
+        break;
+      case 'replacements':
+        this.replacements.update((m) => ({ ...m, [e.citation_id]: e.works }));
         break;
       case 'claim': {
         this.results.update((m) => ({ ...m, [e.result.claim_id]: e.result }));
@@ -249,7 +256,22 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  async copyRef(r: Replacement, style: 'gost' | 'apa', key: string) {
+    const text = style === 'gost' ? gost(r) : apa(r);
+    try {
+      await navigator.clipboard.writeText(text);
+      this.copiedRef.set(key);
+      setTimeout(() => this.copiedRef() === key && this.copiedRef.set(null), 2000);
+    } catch {
+      prompt('Ссылка на работу:', text);
+    }
+  }
+
   // ------------------------------------------------------------ formatting helpers
+
+  authorsShort(authors: string[]): string {
+    return authors.length > 3 ? `${authors.slice(0, 3).join(', ')} и др.` : authors.join(', ');
+  }
 
   /** Split text into parts, marking numbers; numbers absent from `other` are flagged. */
   numberParts(text: string, flagAgainst?: string[]): Part[] {

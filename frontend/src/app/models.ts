@@ -14,6 +14,12 @@ export interface SourceCheck {
   matched?: MatchedRecord | null; text_scope: 'full' | 'abstract' | 'none'; differences: string[];
 }
 
+export interface Replacement {
+  title: string; authors: string[]; year?: number | null; venue?: string | null; doi?: string | null; url?: string | null;
+  abstract: string; cited_by_count: number; volume?: string | null; issue?: string | null; pages?: string | null;
+  confirmed: boolean; quote?: string | null;
+}
+
 export interface Claim {
   id: string; text: string; span: string; start: number; end: number; citation_ids: string[];
   certainty: 'hedged' | 'neutral' | 'assertive'; certainty_markers: string[]; queries: string[];
@@ -40,6 +46,7 @@ export type PipelineEvent =
   | { type: 'extracted'; claims: Claim[]; citations: Citation[] }
   | { type: 'source'; check: SourceCheck }
   | { type: 'claim'; result: ClaimResult }
+  | { type: 'replacements'; citation_id: string; claim_id?: string | null; works: Replacement[] }
   | { type: 'done'; summary: Summary }
   | { type: 'cached' }
   | { type: 'error'; message: string };

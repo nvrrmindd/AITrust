@@ -9,7 +9,7 @@ import logging
 from urllib.parse import urlparse
 
 from . import llm
-from .models import Citation, Claim, ClaimResult, Evidence, NumberCheck, SearchInfo, SourceCheck
+from .models import Citation, Claim, ClaimResult, Evidence, MatchedRecord, NumberCheck, SearchInfo, SourceCheck
 from .prompts import JUDGE_ATTACK_SYSTEM, JUDGE_CITED_SYSTEM
 from .search import TIER_RU, Hit
 from .search import provider as search_provider
@@ -48,6 +48,14 @@ async def judge_cited(claim: Claim, cits: list[Citation], checks: dict[str, Sour
                     r.notes = [n for x in per_source for n in x.notes]
                 return r
     return per_source[0]
+
+
+async def judge_abstract(claim: Claim, title: str, abstract: str) -> ClaimResult:
+    """Judge a claim against a bare abstract (used for suggested replacement works)."""
+    cit = Citation(id="R", kind="academic", title=title)
+    sc = SourceCheck(citation_id="R", status="exists", method="openalex", detail="", text_scope="abstract",
+                     matched=MatchedRecord(title=title))
+    return await _judge_one_source(claim, cit, sc, SourceText(abstract, "abstract"))
 
 
 async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: SourceText) -> ClaimResult:
