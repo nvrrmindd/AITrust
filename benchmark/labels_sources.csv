@@ -1,0 +1,5 @@
+answer_id,source_ref,label
+sample_coursework,10.1038/s41598-023-41032-5,real
+sample_coursework,niemanlab.org,real
+sample_coursework,10.26577/JES.2024.v78.i1.011,fake
+sample_coursework,Johnson,fake

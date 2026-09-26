@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.env
+backend/data/
+backend/static/
+frontend/node_modules/
+frontend/.angular/
+benchmark/results.json
+.venv/

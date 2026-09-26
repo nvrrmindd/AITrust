@@ -1,0 +1,4 @@
+answer_id,claim_ref,label
+sample_coursework,ChatGPT-4 выдумывает 55%,wrong
+sample_coursework,40% запросов,wrong
+sample_coursework,Grok 3,correct

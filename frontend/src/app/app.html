@@ -1,0 +1,278 @@
+<header class="topbar">
+  <a class="brand" href="/" (click)="$event.preventDefault(); reset()">
+    <span class="brand-mark" aria-hidden="true">[✓]</span>
+    <span class="brand-name">Пруф</span>
+  </a>
+  <nav class="topnav">
+    @if (view() === 'result') {
+      <button class="link-btn" type="button" (click)="reset()">Новая проверка</button>
+    }
+    <button class="link-btn" type="button" (click)="showHow.set(true)">Как мы проверяем</button>
+  </nav>
+</header>
+
+@if (view() === 'input') {
+  <main class="intro">
+    <section class="intro-copy">
+      <h1>Ответ ИИ выглядит убедительно. Покажем, что написано в&nbsp;его источниках.</h1>
+      <p class="lede">
+        Вставьте ответ ChatGPT, Gemini или Claude. Пруф проверит, существуют ли источники,
+        говорят ли они то, что им приписали, и сходятся ли цифры. Каждый вывод — с дословной цитатой, которую можно открыть.
+      </p>
+    </section>
+
+    <section class="composer" aria-label="Проверка ответа">
+      <label for="answer" class="composer-label">Ответ ИИ</label>
+      <textarea id="answer" rows="10" [ngModel]="input()" (ngModelChange)="input.set($event)"
+        placeholder="Вставьте сюда ответ целиком, вместе со списком источников, если он есть"></textarea>
+      <div class="composer-foot">
+        <span class="hint">{{ input().length }} / 12 000 символов</span>
+        <button class="primary" type="button" (click)="run()" [disabled]="input().trim().length < 20">Проверить ответ</button>
+      </div>
+      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    </section>
+
+    @if (examples().length) {
+      <section class="examples" aria-label="Примеры">
+        <h2>Или возьмите готовый ответ</h2>
+        <div class="example-list">
+          @for (e of examples(); track e.id) {
+            <button type="button" class="example" (click)="useExample(e)">
+              <span class="example-title">{{ e.title }}</span>
+              <span class="example-sub">{{ e.subtitle }}</span>
+            </button>
+          }
+        </div>
+      </section>
+    }
+
+    <section class="how-strip" aria-label="Что проверяется">
+      <div>
+        <h3>Источник существует?</h3>
+        <p>DOI сверяем с мировым реестром, статьи — с Crossref и OpenAlex, ссылки — открываем. Без участия нейросети.</p>
+      </div>
+      <div>
+        <h3>Он говорит именно это?</h3>
+        <p>Читаем текст источника и ищем место, где сказано то же самое. Показываем цитату дословно.</p>
+      </div>
+      <div>
+        <h3>Источника нет?</h3>
+        <p>Ищем не только подтверждения, но и опровержения: другую цифру, устаревшие данные, противоположный вывод.</p>
+      </div>
+    </section>
+  </main>
+}
+
+@if (view() === 'result') {
+  <main class="report">
+    <section class="verdict-bar" [class.is-running]="running()">
+      @if (summary(); as s) {
+        <h1 class="headline">{{ s.headline }}</h1>
+      } @else {
+        <h1 class="headline headline-pending">{{ stage() }}</h1>
+      }
+      <div class="bar-row">
+        <ul class="tally" aria-label="Итоги по утверждениям">
+          @for (v of legend; track v) {
+            <li class="tally-item tone-{{ VERDICT[v].tone }}" [class.is-zero]="!liveCounts()[v]">
+              <span class="dot"></span>{{ VERDICT[v].short }} <b>{{ liveCounts()[v] || 0 }}</b>
+            </li>
+          }
+        </ul>
+        <div class="bar-actions">
+          @if (summary(); as s) {
+            <span class="meta">{{ claims().length }} утверждений, {{ citations().length }} источников, {{ seconds(s.duration_ms) }} с{{ cached() ? ' (сохранённая проверка)' : '' }}</span>
+            <button class="ghost" type="button" (click)="share()">{{ copied() ? 'Ссылка скопирована' : 'Поделиться отчётом' }}</button>
+          } @else if (progress().total) {
+            <span class="meta">Проверено {{ progress().done }} из {{ progress().total }}</span>
+          }
+        </div>
+      </div>
+      @if (running()) {
+        <div class="progress" role="progressbar" [attr.aria-valuenow]="progress().pct" aria-valuemin="0" aria-valuemax="100">
+          <span [style.width.%]="progress().total ? progress().pct : 8"></span>
+        </div>
+      }
+      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    </section>
+
+    <div class="workspace">
+      <article class="doc" aria-label="Ответ ИИ с разметкой">
+        <div class="doc-head">
+          <h2>Ответ ИИ</h2>
+          <span class="doc-hint">Нажмите на подсвеченное утверждение</span>
+        </div>
+        <div class="doc-body">
+          @for (seg of segments(); track $index) {
+            @if (seg.claim; as c) {
+              <button type="button" class="mark tone-{{ VERDICT[verdictOf(c.id)].tone }}"
+                [class.is-selected]="selectedId() === c.id" (click)="select(c.id)"
+                [attr.aria-label]="VERDICT[verdictOf(c.id)].label + ': ' + c.text">{{ seg.text }}</button>
+            } @else {<span>{{ seg.text }}</span>}
+          }
+        </div>
+        @if (unplacedClaims().length) {
+          <div class="unplaced">
+            <h3>Ещё утверждения</h3>
+            @for (c of unplacedClaims(); track c.id) {
+              <button type="button" class="mark tone-{{ VERDICT[verdictOf(c.id)].tone }}" (click)="select(c.id)">{{ c.text }}</button>
+            }
+          </div>
+        }
+      </article>
+
+      <aside class="evidence" id="evidence" aria-live="polite">
+        @if (selected(); as sel) {
+          @let r = sel.result;
+          @let v = r ? r.verdict : 'pending';
+          <div class="card tone-{{ VERDICT[v].tone }}">
+            <div class="card-verdict">
+              <span class="pill tone-{{ VERDICT[v].tone }}">{{ VERDICT[v].label }}</span>
+              @if (r?.mode === 'attack') { <span class="mode">ИИ не дал источник — искали сами</span> }
+            </div>
+            <p class="claim-text">{{ sel.claim.text }}</p>
+
+            @if (!r) {
+              <div class="skeleton"><span></span><span></span><span></span></div>
+            } @else {
+              <p class="reason">{{ r.reason }}</p>
+
+              @if (r.numbers?.mismatch) {
+                <div class="numbers">
+                  <div><span class="n-label">В ответе ИИ</span><span class="n-val bad">{{ r.numbers!.claim_numbers.join(', ') }}</span></div>
+                  <div><span class="n-label">В источнике</span><span class="n-val good">{{ r.numbers!.source_numbers.slice(0, 4).join(', ') }}</span></div>
+                </div>
+              }
+
+              @for (ev of r.evidence; track $index) {
+                <figure class="quote stance-{{ ev.stance }}">
+                  <blockquote>
+                    @for (p of numberParts(ev.quote); track $index) {
+                      @if (p.num) {<mark>{{ p.t }}</mark>} @else {<span>{{ p.t }}</span>}
+                    }
+                  </blockquote>
+                  <figcaption>
+                    @if (ev.quote_verified) { <span class="verified">Цитата найдена в тексте дословно</span> }
+                    <span class="src">
+                      {{ ev.stance === 'contradicts' ? 'Опровергает' : ev.stance === 'supports' ? 'Подтверждает' : 'Источник' }}:
+                      @if (ev.url) { <a [href]="ev.url" target="_blank" rel="noopener">{{ ev.source_label || host(ev.url) }}</a> }
+                      @else { {{ ev.source_label }} }
+                    </span>
+                  </figcaption>
+                </figure>
+              }
+
+              @for (cid of sel.claim.citation_ids; track cid) {
+                @let chk = checks()[cid];
+                <div class="src-line">
+                  <span class="src-title">Ссылка в ответе: {{ citationLabel(cid) }}</span>
+                  @if (chk) {
+                    <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ SOURCE_STATUS[chk.status].label }}</span>
+                    <span class="src-detail">{{ chk.detail }}</span>
+                  }
+                </div>
+              }
+
+              @if (r.notes.length) {
+                <ul class="notes">
+                  @for (n of r.notes; track $index) { <li>{{ n }}</li> }
+                </ul>
+              }
+              @if (sel.claim.certainty === 'assertive' && r.verdict !== 'supported') {
+                <p class="tone-warning">ИИ сформулировал это уверенно{{ sel.claim.certainty_markers.length ? ' (' + sel.claim.certainty_markers.join(', ') + ')' : '' }}, но доказательств нет.</p>
+              }
+            }
+          </div>
+        } @else {
+          <div class="card empty">
+            <p>{{ running() ? 'Результаты появятся здесь, как только первое утверждение будет проверено.' : 'Выберите утверждение слева, чтобы увидеть доказательства.' }}</p>
+          </div>
+        }
+      </aside>
+    </div>
+
+    @if (citations().length) {
+      <section class="panel sources">
+        <h2>Источники из ответа</h2>
+        <ul class="source-list">
+          @for (c of sortedCitations(); track c.id) {
+            @let chk = checks()[c.id];
+            <li class="source" [class.tone-red]="chk?.status === 'not_found'">
+              <div class="source-top">
+                @if (chk) {
+                  <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ SOURCE_STATUS[chk.status].label }}</span>
+                } @else {
+                  <span class="pill small tone-pending">Проверяем</span>
+                }
+                <span class="source-raw">{{ c.raw || c.title || c.url }}</span>
+              </div>
+              @if (chk) {
+                <p class="source-detail">{{ chk.detail }}</p>
+                @if (chk.differences.length) {
+                  <ul class="diffs">@for (d of chk.differences; track $index) { <li>{{ d }}</li> }</ul>
+                }
+                @if (chk.matched?.url && chk.status !== 'not_found') {
+                  <a class="source-link" [href]="chk.matched!.url" target="_blank" rel="noopener">Открыть: {{ host(chk.matched!.url) }}</a>
+                }
+                <span class="source-method">Как проверено: {{ chk.method }}{{ chk.text_scope === 'abstract' ? ', по аннотации' : chk.text_scope === 'full' ? ', по полному тексту' : '' }}</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (summary()) {
+      @let m = matrix();
+      <section class="panel matrix-panel">
+        <h2>Уверенный тон ≠ доказательства</h2>
+        <p class="panel-sub">Мы не угадываем «уверенность модели». Мы смотрим, насколько уверенно звучит фраза, и сравниваем с тем, что нашлось в источниках.</p>
+        <div class="matrix">
+          <div class="axis-y">Звучит уверенно</div>
+          <div class="cell danger" [class.has]="m.dangerous.length">
+            <b>{{ m.dangerous.length }}</b>
+            <span>Уверенно, но без доказательств</span>
+            <div class="chips">@for (c of m.dangerous; track c.id) { <button type="button" (click)="select(c.id)">{{ c.id }}</button> }</div>
+          </div>
+          <div class="cell ok">
+            <b>{{ m.safe.length }}</b>
+            <span>Уверенно и подтверждено</span>
+            <div class="chips">@for (c of m.safe; track c.id) { <button type="button" (click)="select(c.id)">{{ c.id }}</button> }</div>
+          </div>
+          <div class="axis-y">Звучит осторожно</div>
+          <div class="cell">
+            <b>{{ m.cautiousWeak.length }}</b>
+            <span>Осторожно и без доказательств</span>
+            <div class="chips">@for (c of m.cautiousWeak; track c.id) { <button type="button" (click)="select(c.id)">{{ c.id }}</button> }</div>
+          </div>
+          <div class="cell ok">
+            <b>{{ m.cautiousOk.length }}</b>
+            <span>Осторожно и подтверждено</span>
+            <div class="chips">@for (c of m.cautiousOk; track c.id) { <button type="button" (click)="select(c.id)">{{ c.id }}</button> }</div>
+          </div>
+          <div></div>
+          <div class="axis-x">Не подтверждено</div>
+          <div class="axis-x">Подтверждено цитатой</div>
+        </div>
+      </section>
+    }
+  </main>
+}
+
+@if (showHow()) {
+  <div class="modal-backdrop" (click)="showHow.set(false)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="how-title" (click)="$event.stopPropagation()">
+      <button class="close" type="button" aria-label="Закрыть" (click)="showHow.set(false)">×</button>
+      <h2 id="how-title">Как мы проверяем</h2>
+      <ol class="how-steps">
+        <li><b>Разбор.</b> Языковая модель делит ответ на проверяемые утверждения и находит, на какой источник ссылается каждое.</li>
+        <li><b>Существование источника — без нейросети.</b> DOI проверяется в мировом реестре doi.org, научные работы — в Crossref и OpenAlex, ссылки — прямым запросом. Пейвол или защита от ботов — это «нет доступа», а не «фейк».</li>
+        <li><b>Чтение источника.</b> Скачиваем текст страницы или открытый PDF статьи и выбираем самые релевантные фрагменты (BM25 + совпадение чисел).</li>
+        <li><b>Вердикт с цитатой.</b> Модель-судья обязана привести дословную цитату. Код ищет её в тексте источника: не нашлась — вердикт отбрасывается. Так мы проверяем собственный ИИ.</li>
+        <li><b>Цифры — детерминированно.</b> Числа из утверждения сравниваются с числами из источника без участия модели.</li>
+        <li><b>Нет источника — атакуем.</b> Ищем не только подтверждения, но и опровержения, и показываем найденное цитатами.</li>
+      </ol>
+      <p class="modal-note">Мы не ставим «процент доверия». Честное «не удалось проверить» лучше ложной уверенности.</p>
+    </div>
+  </div>
+}

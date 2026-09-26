@@ -1,0 +1,10 @@
+fastapi==0.141.1
+uvicorn[standard]>=0.30
+httpx==0.28.1
+rapidfuzz>=3.9
+beautifulsoup4>=4.12
+lxml>=5.2
+snowballstemmer>=2.2
+pydantic>=2.7
+trafilatura>=1.12
+pypdf>=3.17
