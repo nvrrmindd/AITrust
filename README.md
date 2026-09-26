@@ -52,7 +52,7 @@ cd backend && python -m app.prewarm
 Подойдёт любой хостинг Docker-контейнеров (Railway, Fly.io).
 
 ### Какую модель брать
-- **Groq** (`LLM_PROVIDER=groq`, бесплатный лимит, очень быстро): `llama-3.3-70b-versatile`.
+- **Groq** (`LLM_PROVIDER=groq`, бесплатный лимит, очень быстро): `openai/gpt-oss-120b`.
 - **OpenAI** (`LLM_PROVIDER=openai`): дешёвая mini-модель.
 - **Anthropic** (`LLM_PROVIDER=anthropic`): `claude-haiku-4-5`.
 

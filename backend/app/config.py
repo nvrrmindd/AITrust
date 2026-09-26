@@ -28,7 +28,7 @@ def _env(name: str, default: str = "") -> str:
 _DEFAULT_MODELS = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-haiku-4-5",
-    "groq": "llama-3.3-70b-versatile",
+    "groq": "openai/gpt-oss-120b",
     "openrouter": "openai/gpt-4o-mini",
 }
 _DEFAULT_BASE = {

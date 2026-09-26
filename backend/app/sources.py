@@ -131,6 +131,15 @@ def pdf_to_text(data: bytes, max_pages: int = 25) -> str:
 
 # ------------------------------------------------------------------ fetchers
 
+async def _wayback(url: str) -> Optional[netsafe.FetchResult]:
+    """Archived copy for sites that block bots (Cloudflare 403 etc.)."""
+    try:
+        res = await netsafe.safe_get(f"https://web.archive.org/web/2026id_/{url}")
+    except Exception:  # noqa: BLE001
+        return None
+    return res if res.status < 400 and res.body else None
+
+
 async def fetch_page(url: str) -> tuple[Optional[SourceCheck], SourceText, str]:
     """Returns (status-if-conclusive, text, page_title). status None means the page exists."""
     try:
@@ -145,6 +154,11 @@ async def fetch_page(url: str) -> tuple[Optional[SourceCheck], SourceText, str]:
     if res.status in (404, 410):
         return _sc("not_found", "http", f"Страница не существует (HTTP {res.status}). ИИ дал ссылку, которая никуда не ведёт."), SourceText("", "none"), ""
     if res.status >= 400:
+        archived = await _wayback(url)
+        if archived:
+            text, title = html_to_text(archived.body, url)
+            if len(text) > 300:
+                return None, SourceText(text, "full", archived.url), title
         return _sc("unreachable", "http", f"Сайт не пустил нас (HTTP {res.status}): пейвол или защита от ботов. Это не значит, что источника нет."), SourceText("", "none"), ""
 
     ctype = res.content_type.lower()
