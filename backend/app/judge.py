@@ -224,5 +224,8 @@ def _provider_ru(p: str) -> str:
 
 
 def _in_lang(system: str) -> str:
-    """The judge prompts ask for the reason "по-русски"; switch that to the user's language."""
-    return system.replace("по-русски", LLM_LANGUAGE[current()])
+    """The judge prompts ask for the reason "по-русски"; switch that to the user's language and repeat it
+    at the very end, where weaker models actually follow it."""
+    lang = LLM_LANGUAGE[current()]
+    tail = "" if current() == "ru" else f"\n\nВАЖНО: поле reason пиши {lang}, даже если утверждение и источник на другом языке."
+    return system.replace("по-русски", lang) + tail
