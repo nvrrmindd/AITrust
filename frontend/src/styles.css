@@ -460,3 +460,84 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
   .evidence { position: static; margin-top: 12px; }
   a { color: #000; text-decoration: underline; }
 }
+
+/* ================================================================ lilac cards + motion */
+:root {
+  --lil-bg: #f6f1ff;
+  --lil-bg-2: #efe6ff;
+  --lil-line: #e2d6fb;
+  --lil-line-strong: #cdbaf6;
+  --lil-shadow: 0 16px 34px -20px rgba(106, 69, 214, .45);
+}
+
+.checker, .example, .aud, .faq-item.is-open, .composer, .dropzone, .step svg {
+  background: linear-gradient(160deg, #fbf8ff 0%, var(--lil-bg) 100%);
+  border-color: var(--lil-line);
+}
+.checker, .example, .aud { border: 1px solid var(--lil-line); border-radius: var(--radius-m);
+  transition: transform .25s cubic-bezier(.2, .8, .2, 1), box-shadow .25s, border-color .25s, background .25s; }
+.checker:hover, .example:hover, .aud:hover { transform: translateY(-4px); box-shadow: var(--lil-shadow); border-color: var(--lil-line-strong);
+  background: linear-gradient(160deg, #ffffff 0%, var(--lil-bg-2) 100%); }
+.checker svg { stroke: var(--plum); }
+.checker svg, .step svg { transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
+.checker:hover svg { transform: rotate(-6deg) scale(1.08); }
+.aud { padding: 20px; border-top: 3px solid var(--accent); }
+.step svg { border: 1px solid var(--lil-line); }
+.step:hover svg { transform: translateY(-4px); }
+.composer { border-color: var(--lil-line-strong); box-shadow: 0 24px 50px -34px rgba(106, 69, 214, .5); }
+.composer textarea { background: #fff; border-color: var(--lil-line); }
+.composer textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(106, 69, 214, .12); }
+.dropzone { border-color: var(--lil-line-strong); }
+.dropzone:hover, .dropzone.is-drag { border-color: var(--accent); background: #fff; }
+.dz-icon { stroke: var(--accent); }
+.faq-item.is-open { border-radius: var(--radius-m); padding: 0 16px; border: 1px solid var(--lil-line); }
+.tab.is-active { border-bottom-color: var(--accent); color: var(--plum); }
+.band { background-color: #f8f4ff; background-image: radial-gradient(#e2d6fb 1px, transparent 1.2px); }
+
+/* report cards: very light lilac, verdict colours untouched */
+.doc, .card, .source, .cell, .bib-scroll { border-color: var(--lil-line); }
+.doc, .source, .cell { background: #fdfbff; }
+.quote, .numbers > div, .searched, .repl { background: var(--lil-bg); }
+
+/* buttons */
+.primary { transition: transform .2s, box-shadow .2s, background .2s; }
+.primary:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 12px 24px -12px rgba(42, 18, 69, .6); }
+.ghost { transition: transform .2s, box-shadow .2s, border-color .2s, background .2s; }
+.ghost:hover { border-color: var(--lil-line-strong); background: var(--lil-bg); }
+
+/* motion */
+@keyframes float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -14px; } }
+@keyframes float-rot { 0%, 100% { translate: 0 0; rotate: 0deg; } 50% { translate: 0 -18px; rotate: 7deg; } }
+@keyframes rise { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
+@keyframes pop { from { opacity: 0; scale: .92; } to { opacity: 1; scale: 1; } }
+@keyframes draw { from { background-size: 0% 100%; } to { background-size: 100% 100%; } }
+
+.c-splat { animation: pop 1s .2s both, float-rot 12s 1.2s ease-in-out infinite; }
+.c-drop { animation: pop 1s .5s both, float 9s 1.5s ease-in-out infinite; }
+.c-dot1 { animation: float 6s ease-in-out infinite; }
+.c-dot2 { animation: float 7s 1s ease-in-out infinite; }
+.c-cta { animation: float-rot 14s ease-in-out infinite; }
+
+.marker { background-repeat: no-repeat; background-size: 100% 100%; animation: draw .9s .45s cubic-bezier(.6, 0, .2, 1) both; }
+.hero-copy > * { animation: rise .7s cubic-bezier(.2, .8, .2, 1) both; }
+.hero-copy > :nth-child(2) { animation-delay: .1s; }
+.hero-copy > :nth-child(3) { animation-delay: .2s; }
+.hero-copy > :nth-child(4) { animation-delay: .3s; }
+.art-doc { animation: rise .8s .25s cubic-bezier(.2, .8, .2, 1) both; }
+.art-a { animation: pop .6s .7s both, float 7s 1.4s ease-in-out infinite; }
+.art-b { animation: pop .6s .9s both, float 8s 1.6s ease-in-out infinite; }
+.art-c { animation: pop .6s 1.1s both, float 6s 1.8s ease-in-out infinite; }
+.art-mark { animation: pop .5s both; }
+.art-mark.m-green { animation-delay: .9s; } .art-mark.m-orange { animation-delay: 1.1s; } .art-mark.m-red { animation-delay: 1.3s; }
+
+/* sections appear while scrolling (Chrome, Edge, Safari 26+); elsewhere they are simply visible */
+@supports (animation-timeline: view()) {
+  .section-title, .section-sub, .checker, .step, .aud, .faq-item, .example, .trust-strip, .cta {
+    animation: rise linear both; animation-timeline: view(); animation-range: entry 0% entry 60%;
+  }
+}
+
+@media print {
+  .chrome, .chrome-bg { display: none !important; }
+  * { animation: none !important; }
+}
