@@ -25,7 +25,7 @@ def _env(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
 
 
-PROVIDERS = ("openai", "groq", "openrouter", "anthropic", "gemini")
+PROVIDERS = ("openai", "groq", "openrouter", "anthropic", "gemini", "cerebras", "mistral")
 
 _DEFAULT_MODELS = {
     "openai": "gpt-4o-mini",
@@ -40,6 +40,8 @@ DEFAULT_BASE = _DEFAULT_BASE = {
     "openrouter": "https://openrouter.ai/api/v1",
     "anthropic": "https://api.anthropic.com",
     "gemini": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "cerebras": "https://api.cerebras.ai/v1",
+    "mistral": "https://api.mistral.ai/v1",
 }
 
 
@@ -84,12 +86,9 @@ class Settings:
         (self.data_dir / "reports").mkdir(parents=True, exist_ok=True)
 
     def key_for(self, provider: str) -> str:
-        """API key for any provider of a fallback chain (Gemini and Groq have their own variables)."""
-        if provider == "gemini":
-            return self.gemini_api_key or (self.llm_api_key if self.llm_provider == "gemini" else "")
-        if provider == "groq":
-            return self.groq_api_key or (self.llm_api_key if self.llm_provider == "groq" else "")
-        return self.llm_api_key if provider == self.llm_provider else ""
+        """API key for any provider of a fallback chain: <PROVIDER>_API_KEY, or LLM_API_KEY for the main provider."""
+        own = {"gemini": self.gemini_api_key, "groq": self.groq_api_key}.get(provider) or _env(f"{provider.upper()}_API_KEY")
+        return own or (self.llm_api_key if provider == self.llm_provider else "")
 
     @property
     def user_agent(self) -> str:
