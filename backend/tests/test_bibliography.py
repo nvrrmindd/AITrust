@@ -5,7 +5,7 @@ import pytest
 from docx import Document
 from fastapi.testclient import TestClient
 
-from app.bibliography import (NO_BIBLIOGRAPHY, Reference, cited_claims, find_bibliography, parse_reference, score,
+from app.bibliography import (Reference, cited_claims, find_bibliography, parse_reference, score,
                               split_references)
 from app.documents import DocumentError, extract_text
 from app.models import SourceCheck
@@ -163,11 +163,44 @@ def test_scanned_pdf_and_bad_inputs():
     assert extract_text("w.txt", "Список литературы\n1. Тест".encode("cp1251")).startswith("Список литературы")
 
 
-def test_check_file_endpoint_errors():
+def test_check_file_endpoint_errors(monkeypatch):
+    from app.config import settings
     from app.main import app
+    monkeypatch.setattr(settings, "llm_api_key", "")  # never start a real LLM job from a test
     c = TestClient(app)
     r = c.post("/api/check-file", files={"file": ("w.odt", b"x" * 50, "application/octet-stream")})
     assert r.status_code == 422 and "формат" in r.json()["detail"]
     r = c.post("/api/check-file", files={"file": ("w.txt", "Текст без списка литературы, но длинный.".encode(), "text/plain")})
-    assert r.status_code == 422 and r.json()["detail"] == NO_BIBLIOGRAPHY
+    assert r.status_code == 503  # no reference list is fine now: it is checked like any text (needs the LLM)
     assert c.get("/api/sample-docx").status_code == 200
+
+
+def test_runs_with_temporary_failures_are_not_cached():
+    from app.store import _transient
+    ok = [{"type": "source", "check": {"status": "exists", "detail": "ok"}}]
+    busy = [{"type": "bibliography", "items": [{"check": {"status": "unreachable", "detail": "… повторите проверку через минуту."}}]}]
+    quota = [{"type": "claim", "result": {"reason": "Сбой модели-судьи: 429"}}]
+    assert not _transient(ok) and _transient(busy) and _transient(quota)
+
+
+def test_document_without_reference_list_is_checked_as_text(monkeypatch):
+    import asyncio
+
+    from app import bibliography
+    from app.config import settings
+    seen = {}
+
+    async def fake_run(text):
+        seen["text"] = text
+        yield {"type": "done", "summary": {}}
+
+    monkeypatch.setattr(bibliography, "run", fake_run)
+    monkeypatch.setattr(settings, "max_text_chars", 50)
+    text = "Эссе без списка литературы. " * 10
+
+    async def collect():
+        return [ev async for ev in bibliography.run_document(text, "essay.docx")]
+
+    evs = asyncio.run(collect())
+    assert [e["type"] for e in evs] == ["document", "notice", "done"]
+    assert seen["text"] == text[:50]

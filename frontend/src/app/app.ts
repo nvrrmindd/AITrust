@@ -29,6 +29,22 @@ export class App implements OnInit, OnDestroy {
   examples = signal<Example[]>([]);
   error = signal<string | null>(null);
   searchProvider = signal<string>('tavily');
+  supportEmail = signal<string | null>(null);
+  notices = signal<string[]>([]);
+  openFaq = signal<number | null>(0);
+  readonly year = new Date().getFullYear();
+  readonly faq = [
+    { q: 'Это ещё один ИИ-детектор?',
+      a: 'Нет. Мы не угадываем, написан ли текст нейросетью. Мы проверяем, правда ли то, что в нём написано: существуют ли источники, говорят ли они то, что им приписали, и совпадают ли цифры.' },
+    { q: 'Почему проверке можно доверять, если в ней тоже есть нейросеть?',
+      a: 'Нейросеть только находит нужное место в источнике. Существует ли источник, решают реестры публикаций; совпадают ли цитата и числа — код. Если цитаты нет в источнике дословно, вердикт выбрасывается. А сама цитата всегда перед глазами — проверить нас можно за пять секунд.' },
+    { q: 'Какие тексты можно проверить?',
+      a: 'Любые на русском и английском: ответ нейросети, статью, новость, пост, реферат. Документы — .docx, .pdf, .txt, .md до 10 МБ. Если в документе есть список литературы, проверим каждый источник из него.' },
+    { q: 'Что значит «нет доступа»?',
+      a: 'Источник закрыт пейволом или защитой от ботов, либо научная база временно не ответила. Такой источник мы не называем выдуманным: повторите проверку позже или откройте ссылку сами.' },
+    { q: 'Что происходит с моим текстом?',
+      a: 'Для разбора текст передаётся провайдеру языковой модели, а отчёт хранится на сервере, чтобы открываться по ссылке. Мы не публикуем тексты и сами не используем их для обучения.' },
+  ];
   showHow = signal(false);
   mode = signal<'answer' | 'file'>('answer');
   dragging = signal(false);
@@ -63,7 +79,11 @@ export class App implements OnInit, OnDestroy {
   constructor(private api: Api) {}
 
   async ngOnInit() {
-    this.api.health().then(h => h && this.searchProvider.set(h.search));
+    this.api.health().then((h) => {
+      if (!h) return;
+      this.searchProvider.set(h.search);
+      this.supportEmail.set(h.support_email || null);
+    });
     this.examples.set(await this.api.examples().catch(() => []));
     const m = location.pathname.match(/^\/r\/([\w-]+)/);
     if (m) await this.openReport(m[1]);
@@ -237,6 +257,16 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  goCheck(mode: 'answer' | 'file') {
+    if (this.view() !== 'input') this.reset();
+    this.mode.set(mode);
+    setTimeout(() => this.scrollToId('check'));
+  }
+
+  toggleFaq(i: number) {
+    this.openFaq.set(this.openFaq() === i ? null : i);
+  }
+
   scrollToId(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -266,6 +296,7 @@ export class App implements OnInit, OnDestroy {
     this.results.set({});
     this.replacements.set({});
     this.doc.set(null);
+    this.notices.set([]);
     this.bib.set([]);
     this.score.set(null);
     this.qr.set('');
@@ -324,6 +355,9 @@ export class App implements OnInit, OnDestroy {
       }
       case 'score':
         this.score.set(e.score);
+        break;
+      case 'notice':
+        this.notices.update((n) => [...n, e.message]);
         break;
       case 'source':
         this.checks.update((m) => ({ ...m, [e.check.citation_id]: e.check }));

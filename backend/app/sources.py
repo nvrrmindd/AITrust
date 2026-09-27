@@ -234,19 +234,27 @@ async def _openalex_doi(doi: str) -> Optional[dict]:
     return data if status == 200 else None
 
 
-async def _get_json_retry(url: str, params: dict, tries: int = 3) -> Optional[dict]:
+# OpenAlex throttles anonymous bursts (429): at most 2 title searches at a time
+_openalex_sem = asyncio.Semaphore(2)
+
+
+async def _get_json_retry(url: str, params: dict, tries: int = 5) -> Optional[dict]:
     """Title search is what decides "this paper does not exist", so a busy API must not make us give up:
-    retry 429/5xx/timeouts with a short backoff. None = the database really did not answer."""
+    retry 429/5xx/timeouts with backoff (~20 s in total). None = the database really did not answer."""
     for i in range(tries):
         try:
-            status, data = await netsafe.get_json(url, params)
+            if url.startswith(OPENALEX):
+                async with _openalex_sem:
+                    status, data = await netsafe.get_json(url, params)
+            else:
+                status, data = await netsafe.get_json(url, params)
             if status == 200 and data is not None:
                 return data
             if status not in (429, 500, 502, 503, 504):
                 return None
         except httpx.HTTPError:
             pass
-        await asyncio.sleep(1.5 * (i + 1))
+        await asyncio.sleep(2.0 * (i + 1))
     return None
 
 
@@ -367,7 +375,15 @@ async def _check_by_metadata(cit: Citation) -> tuple[SourceCheck, SourceText]:
                    matched=rec, text_scope=text.scope), text
 
     if not searched_ok:
-        return _sc("unreachable", "crossref+openalex", "Научные базы сейчас не ответили — не можем проверить."), SourceText("", "none")
+        if cr_items is not None:
+            why = ("В Crossref такой работы нет, но вторая база (OpenAlex) сейчас перегружена. Чтобы не назвать настоящий "
+                   "источник выдуманным, вердикт не выносим — повторите проверку через минуту.")
+        elif oa_items is not None:
+            why = ("В OpenAlex такой работы нет, но Crossref сейчас не ответил. Чтобы не назвать настоящий источник "
+                   "выдуманным, вердикт не выносим — повторите проверку через минуту.")
+        else:
+            why = "Научные базы Crossref и OpenAlex сейчас не ответили — повторите проверку через минуту."
+        return _sc("unreachable", "crossref+openalex", why), SourceText("", "none")
 
     if cit.kind == "academic":
         near = f" Ближайшее похожее: «{rec.title}»." if rec and score >= 60 else ""

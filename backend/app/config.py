@@ -55,6 +55,7 @@ class Settings:
     # free key from openalex.org: anonymous search gets paused under load
     openalex_api_key: str = field(default_factory=lambda: _env("OPENALEX_API_KEY"))
     contact_email: str = field(default_factory=lambda: _env("CONTACT_EMAIL", "pruf@example.com"))
+    support_email: str = field(default_factory=lambda: _env("SUPPORT_EMAIL"))  # shown in the site footer
     data_dir: Path = field(default_factory=lambda: Path(_env("DATA_DIR", str(Path(__file__).resolve().parent.parent / "data"))))
     static_dir: Path = field(default_factory=lambda: Path(_env("STATIC_DIR", str(Path(__file__).resolve().parent.parent / "static"))))
     max_text_chars: int = field(default_factory=lambda: int(_env("MAX_TEXT_CHARS", "12000")))

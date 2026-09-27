@@ -18,6 +18,14 @@
 @if (view() === 'input') {
   <main class="intro">
     <section class="hero">
+      <svg class="doodles" viewBox="0 0 1120 560" preserveAspectRatio="none" aria-hidden="true">
+        <path class="dd" d="M40 520c30-10 60 8 90-2s60-12 90 0"/>
+        <path class="dd" d="M1030 60q10-22 30-10t-6 30q-14 10-10 26"/><circle class="dd-fill" cx="1053" cy="122" r="3"/>
+        <path class="dd" d="M470 36l10 10 20-24"/>
+        <path class="dd" d="M990 470c-8-8-4-22 8-22s14 16 4 22c14 0 16 20 0 22"/>
+        <path class="dd" d="M12 120q6-20 22-8M22 132q6-20 22-8"/>
+        <circle class="dd" cx="640" cy="530" r="10"/><path class="dd" d="M647 537l12 12"/>
+      </svg>
       <div class="hero-copy">
         <h1>Этому тексту <span class="marker">можно верить?</span></h1>
         <p class="lede">
@@ -57,13 +65,20 @@
       </div>
     </section>
 
+    <section class="trust-strip" aria-label="Источники проверки">
+      <span class="ts-label">Проверяем по открытым источникам</span>
+      <ul>
+        <li>doi.org</li><li>Crossref</li><li>OpenAlex</li><li>Wikipedia</li><li>сайт первоисточника</li><li>веб-поиск</li>
+      </ul>
+    </section>
+
     <section id="check" class="check">
       <h2 class="section-title">Что проверяем?</h2>
       <div class="tabs" role="tablist" aria-label="Что проверяем">
         <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'answer'" [attr.aria-selected]="mode() === 'answer'"
           (click)="mode.set('answer'); error.set(null)">Текст</button>
         <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'file'" [attr.aria-selected]="mode() === 'file'"
-          (click)="mode.set('file'); error.set(null)">Документ со списком литературы</button>
+          (click)="mode.set('file'); error.set(null)">Документ</button>
       </div>
 
       @if (mode() === 'file') {
@@ -73,10 +88,11 @@
           <input type="file" [accept]="FILE_FORMATS" (change)="onPick($event)" [disabled]="uploading()">
           <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h17l9 9v27a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M29 6v9h9"/><path d="M17 24h14M17 30h14M17 36h8"/></svg>
           <span class="dz-title">{{ uploading() ? 'Загружаю…' : 'Перетащите документ сюда' }}</span>
-          <span class="dz-sub">курсовая, диплом, статья, реферат, отчёт · .docx, .pdf, .txt, .md · до 10 МБ</span>
+          <span class="dz-sub">курсовая, статья, эссе, отчёт, любой документ · .docx, .pdf, .txt, .md · до 10 МБ</span>
           <span class="dz-pick">или выберите файл</span>
         </label>
-        <p class="hint">Проверим каждый источник из списка литературы и утверждения в тексте, которые на них ссылаются: [1], [2, с. 15], (Иванов, 2020).</p>
+        <p class="hint">Есть список литературы — проверим каждый источник и утверждения, которые на него ссылаются ([1], [2, с. 15], (Иванов, 2020)).
+          Нет списка — проверим утверждения в тексте, как обычный текст.</p>
         <div class="composer-foot">
           <button class="ghost" type="button" (click)="runSample()" [disabled]="uploading()">Попробовать на примере (DOCX)</button>
         </div>
@@ -113,7 +129,7 @@
       }
     </section>
 
-    <section class="who-checks">
+    <section class="who-checks band">
       <h2 class="section-title">Кто на самом деле проверяет</h2>
       <p class="section-sub">Нейросеть у нас не выносит приговор. Она только находит в источнике нужное место. Решают реестры и код.</p>
       <div class="checker-grid">
@@ -143,9 +159,9 @@
           <p>Если источник не указан, ищем в интернете не только подтверждения, но и опровержения. Надёжные сайты весят больше.</p>
         </div>
         <div class="checker">
-          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 5l12 5v9c0 8-5 13-12 16C13 32 8 27 8 19v-9z"/><path d="M15 20l4 4 7-8" class="stroke-green"/></svg>
-          <h3>Лучше «не знаю», чем ложь</h3>
-          <p>Не смогли проверить — так и пишем. На 34 настоящих источниках мы ни разу не назвали настоящий источник выдуманным.</p>
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 5h14l6 6v24H10z"/><path d="M24 5v6h6"/><rect x="14" y="19" width="10" height="10" rx="1"/><path d="M16 21h2v2h-2zM20 25h2v2h-2z" class="fill-ink"/></svg>
+          <h3>Отчёт, который можно перепроверить</h3>
+          <p>PDF с датой и QR-кодом: по нему любой откроет исходную проверку со всеми цитатами и ссылками.</p>
         </div>
       </div>
     </section>
@@ -188,6 +204,24 @@
         </div>
       </div>
     </section>
+
+    <section class="faq">
+      <h2 class="section-title">Частые вопросы</h2>
+      @for (q of faq; track $index) {
+        <div class="faq-item" [class.is-open]="openFaq() === $index">
+          <button type="button" class="faq-q" (click)="toggleFaq($index)" [attr.aria-expanded]="openFaq() === $index">
+            {{ q.q }}<span class="faq-sign" aria-hidden="true">{{ openFaq() === $index ? '−' : '+' }}</span>
+          </button>
+          @if (openFaq() === $index) { <p class="faq-a">{{ q.a }}</p> }
+        </div>
+      }
+    </section>
+
+    <section class="cta">
+      <h2>Прежде чем поверить — проверьте.</h2>
+      <p>Вставьте текст или загрузите документ. Первые утверждения загорятся через несколько секунд.</p>
+      <button class="primary" type="button" (click)="scrollToId('check')">Проверить текст</button>
+    </section>
   </main>
 }
 
@@ -210,6 +244,7 @@
         @let sc = liveScore();
         <div class="doc-score">
           <span class="doc-file">{{ d.filename }}</span>
+          @if (bib().length) {
           <p class="score-big">Достоверность источников: <b>{{ sc.verified }} из {{ sc.total }}</b></p>
           <p class="score-sub">
             Выдумано: <b [class.bad]="sc.fabricated">{{ sc.fabricated }}</b>,
@@ -217,6 +252,7 @@
             нет доступа: <b>{{ sc.unreachable }}</b>
             @if (!score() && bib().length) { <span class="meta"> · проверено {{ bibChecked() }} из {{ bib().length }}</span> }
           </p>
+          }
         </div>
       }
       @if (summary(); as s) {
@@ -248,6 +284,7 @@
         </div>
       }
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+      @for (n of notices(); track $index) { <p class="notice">{{ n }}</p> }
     </section>
 
     @if (doc() && bib().length) {
@@ -535,3 +572,39 @@
     </div>
   </div>
 }
+
+<footer class="site-footer">
+  <div class="sf-inner">
+    <div class="sf-brand">
+      <a class="brand" href="/" (click)="$event.preventDefault(); reset()">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="26" height="26"><rect width="32" height="32" rx="8" fill="#1c1b19"/>
+            <path d="M11.5 12.2a4.6 4.6 0 1 1 6.4 4.2c-1.3.6-1.9 1.4-1.9 2.8v.8" stroke="#ffe27a" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="16" cy="24.3" r="1.9" fill="#ffe27a"/></svg>
+        </span>
+        <span class="brand-name">Trustable<span class="brand-q">?</span></span>
+      </a>
+      <p>Проверка текстов по источникам: цитата вместо «доверьтесь нам».</p>
+    </div>
+    <nav class="sf-col" aria-label="Продукт">
+      <h3>Продукт</h3>
+      <button type="button" (click)="goCheck('answer')">Проверить текст</button>
+      <button type="button" (click)="goCheck('file')">Проверить документ</button>
+      <button type="button" (click)="showHow.set(true)">Как мы проверяем</button>
+    </nav>
+    <nav class="sf-col" aria-label="Разработчикам">
+      <h3>Разработчикам</h3>
+      <a href="/docs" target="_blank" rel="noopener">API</a>
+      <a href="https://github.com/nvrrmindd/AITrust" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <div class="sf-col">
+      <h3>Поддержка</h3>
+      @if (supportEmail(); as mail) { <a [href]="'mailto:' + mail">{{ mail }}</a> }
+      <a href="https://github.com/nvrrmindd/AITrust/issues" target="_blank" rel="noopener">Сообщить об ошибке</a>
+    </div>
+  </div>
+  <div class="sf-bottom">
+    <span>© {{ year }} Trustable?</span>
+    <span>Вердикт — с цитатой. Последнее слово — за вами.</span>
+  </div>
+</footer>

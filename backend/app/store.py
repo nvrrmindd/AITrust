@@ -45,10 +45,24 @@ def _report_path(rid: str):
     return settings.data_dir / "reports" / f"{rid}.json"
 
 
+def _transient(events: list[dict]) -> bool:
+    """A run hit a temporary failure (database busy, LLM quota): show it, but don't cache it, so a retry re-checks."""
+    for e in events:
+        if e["type"] == "error":
+            return True
+        chk = e.get("check") or {}
+        items = [it.get("check") or {} for it in e.get("items", [])] if e["type"] == "bibliography" else [chk]
+        if any(c.get("status") == "unreachable" and "повторите" in c.get("detail", "") for c in items):
+            return True
+        if e["type"] == "claim" and e["result"]["reason"].startswith(("Сбой модели", "Внутренняя ошибка")):
+            return True
+    return False
+
+
 def _save_report(job: Job) -> None:
     payload = {"id": job.id, "text": job.text, "events": job.events, "created": job.created, "filename": job.filename}
     _report_path(job.id).write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-    if not any(e["type"] == "error" for e in job.events):
+    if not _transient(job.events):
         _cache_path(_key(job)).write_text(json.dumps(job.events, ensure_ascii=False), encoding="utf-8")
 
 

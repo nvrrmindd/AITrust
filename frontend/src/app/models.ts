@@ -49,6 +49,7 @@ export type PipelineEvent =
   | { type: 'document'; filename: string; chars: number; checked_at: string; text: string }
   | { type: 'bibliography'; items: BibItem[] }
   | { type: 'score'; score: Score }
+  | { type: 'notice'; message: string }
   | { type: 'replacements'; citation_id: string; claim_id?: string | null; works: Replacement[] }
   | { type: 'done'; summary: Summary }
   | { type: 'cached' }

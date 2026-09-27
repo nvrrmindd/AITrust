@@ -17,10 +17,11 @@ from datetime import datetime, timezone
 from typing import AsyncIterator, Optional
 
 from . import llm
+from .config import settings
 from .extract import _marker_numbers, _norm_citation
 from .judge import judge_cited
 from .models import Citation, Claim, ClaimResult, SourceCheck
-from .pipeline import summarize
+from .pipeline import run, summarize
 from .replacements import find_replacements
 from .sources import SourceText, check_citation
 from .textutil import certainty, clean_doi, find_dois, find_urls
@@ -29,7 +30,6 @@ log = logging.getLogger("pruf.bibliography")
 
 MAX_CLAIMS = 15
 SOURCE_PARALLEL = 6
-NO_BIBLIOGRAPHY = 'Список литературы не найден — проверьте утверждения во вкладке "Ответ ИИ".'
 
 HEADINGS = (
     "список литературы", "список использованной литературы", "список использованных источников",
@@ -249,7 +249,13 @@ async def run_document(text: str, filename: str) -> AsyncIterator[dict]:
            "checked_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
     found = find_bibliography(text)
     if not found:
-        yield {"type": "error", "message": NO_BIBLIOGRAPHY}
+        # no reference list: check the document like any other text (claims + search for support and refutation)
+        part = text[: settings.max_text_chars]
+        if len(part) < len(text):
+            yield {"type": "notice", "message": f"Списка литературы в документе нет, а текст длинный: проверены первые "
+                                                f"{len(part):,} символов из {len(text):,}.".replace(",", " ")}
+        async for ev in run(part):
+            yield ev
         return
     body, bib = found
     yield {"type": "stage", "stage": "extract", "message": "Разбираю список литературы…"}

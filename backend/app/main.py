@@ -12,7 +12,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from . import store
-from .bibliography import NO_BIBLIOGRAPHY, find_bibliography
 from .config import settings
 from .documents import MAX_BYTES, DocumentError, extract_text
 from .models import CheckRequest
@@ -62,6 +61,7 @@ def health() -> dict:
         "llm_extract": settings.llm_model_extract,
         "llm_judge": settings.llm_model_judge,
         "search": "tavily" if settings.tavily_api_key else "wikipedia",
+        "support_email": settings.support_email or None,
     }
 
 
@@ -94,8 +94,6 @@ async def create_file_check(request: Request, file: UploadFile = File(...)) -> d
         text = extract_text(name, data)
     except DocumentError as e:
         raise HTTPException(422, str(e)) from e
-    if not find_bibliography(text):
-        raise HTTPException(422, NO_BIBLIOGRAPHY)
     cached = store._cache_path(store.text_key(text, "document")).exists()
     if not cached:
         if not settings.llm_api_key:

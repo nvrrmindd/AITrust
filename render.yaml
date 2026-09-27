@@ -21,3 +21,5 @@ services:
         sync: false
       - key: CONTACT_EMAIL
         sync: false
+      - key: SUPPORT_EMAIL
+        sync: false

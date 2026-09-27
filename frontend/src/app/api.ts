@@ -10,7 +10,7 @@ export class Api {
     return r.ok ? r.json() : [];
   }
 
-  async health(): Promise<{ ok: boolean; llm_configured: boolean; llm: string; search: string } | null> {
+  async health(): Promise<{ ok: boolean; llm_configured: boolean; llm: string; search: string; support_email?: string | null } | null> {
     try {
       const r = await fetch(`${this.base}/api/health`);
       return r.ok ? r.json() : null;
