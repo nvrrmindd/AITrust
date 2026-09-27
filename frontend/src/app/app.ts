@@ -61,6 +61,7 @@ export class App implements OnInit, OnDestroy {
   lang = signal<Lang>(detectLang());
   t = computed<Dict>(() => DICTS[this.lang()]);
   theme = signal<'light' | 'dark'>(detectTheme());
+  reportLang = signal<Lang>('ru');
   showHow = signal(false);
   mode = signal<'answer' | 'file'>('answer');
   dragging = signal(false);
@@ -218,6 +219,7 @@ export class App implements OnInit, OnDestroy {
     try {
       const { id, cached } = await this.api.start(text);
       this.begin(id, text, cached);
+      this.reportLang.set(this.lang());
       history.pushState({}, '', `/r/${id}`);
       this.listen(id);
     } catch (e) {
@@ -265,6 +267,7 @@ export class App implements OnInit, OnDestroy {
     try {
       const { id, cached } = await this.api.checkFile(file);
       this.begin(id, '', cached);
+      this.reportLang.set(this.lang());
       this.stage.set(this.t().msg.reading(file.name));
       history.pushState({}, '', `/r/${id}`);
       this.listen(id);
@@ -312,6 +315,12 @@ export class App implements OnInit, OnDestroy {
 
   scrollToId(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /** Re-run the same text in the current UI language (instant for the demos: they are saved in all three). */
+  recheck() {
+    this.input.set(this.reportText());
+    this.run();
   }
 
   printReport() {
@@ -364,6 +373,7 @@ export class App implements OnInit, OnDestroy {
     }
     this.input.set(rep.text);
     this.begin(id, rep.text, false);
+    this.reportLang.set((rep.lang === 'en' || rep.lang === 'kk') ? rep.lang : 'ru');
     for (const e of rep.events) this.apply(e);
     this.running.set(false);
   }

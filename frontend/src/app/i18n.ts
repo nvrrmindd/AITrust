@@ -1,5 +1,5 @@
 // UI strings in Russian, English and Kazakh. Kazakh should be proofread by a native speaker before release.
-import type { SourceStatus, Verdict } from './models';
+import type { SourceStatus, Summary, Verdict } from './models';
 
 export type Lang = 'ru' | 'en' | 'kk';
 export const LANGS: { id: Lang; label: string; name: string }[] = [
@@ -53,11 +53,56 @@ export interface Dict {
   verdict: Record<Verdict, { label: string; short: string }>;
   status: Record<SourceStatus, string>;
   tier: Record<string, string>;
+  headline: (s: Summary) => string;
+  recheck: { note: string; button: string };
   msg: {
     tooShort: string; format: string; tooBig: string; reportMissing: string; sending: string;
     reading: (f: string) => string; found: (c: number, s: number) => string; bibProgress: (a: number, b: number) => string;
     server: (s: number) => string; short422: string; sampleMissing: string;
   };
+}
+
+
+const ruPlural = (n: number, one: string, few: string, many: string) => {
+  const m = Math.abs(n) % 100, d = m % 10;
+  return m > 10 && m < 20 ? many : d === 1 ? one : d >= 2 && d <= 4 ? few : many;
+};
+
+function parts(s: Summary) {
+  const c = s.counts;
+  const total = Object.entries(c).filter(([k]) => k !== 'pending').reduce((a, [, v]) => a + v, 0);
+  return { total, ok: c['supported'] || 0, bad: c['contradicted'] || 0, weak: (c['unverifiable'] || 0) + (c['not_in_source'] || 0) };
+}
+const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+
+function headlineRu(s: Summary): string {
+  const { total, ok, bad, weak } = parts(s);
+  const p: string[] = [];
+  if (s.sources_total && s.sources_missing) p.push(`${s.sources_missing} из ${s.sources_total} ${ruPlural(s.sources_total, 'источника', 'источников', 'источников')} не существуют`);
+  if (s.sources_mismatch) p.push(`${s.sources_mismatch} ${ruPlural(s.sources_mismatch, 'источник искажён', 'источника искажены', 'источников искажены')}`);
+  if (bad) p.push(`${bad} ${ruPlural(bad, 'утверждение противоречит', 'утверждения противоречат', 'утверждений противоречат')} источникам`);
+  if (!p.length) return (total ? `Подтверждено ${ok} из ${total} утверждений` : 'Проверяемых утверждений не найдено') + (weak ? `, ${weak} — без доказательств.` : '.');
+  return cap(p.join('; ')) + '.';
+}
+
+function headlineEn(s: Summary): string {
+  const { total, ok, bad, weak } = parts(s);
+  const p: string[] = [];
+  if (s.sources_total && s.sources_missing) p.push(`${s.sources_missing} of ${s.sources_total} sources do not exist`);
+  if (s.sources_mismatch) p.push(`${s.sources_mismatch} source${s.sources_mismatch === 1 ? ' is' : 's are'} distorted`);
+  if (bad) p.push(`${bad} claim${bad === 1 ? ' contradicts' : 's contradict'} the sources`);
+  if (!p.length) return (total ? `Confirmed ${ok} of ${total} claims` : 'No checkable claims found') + (weak ? `, ${weak} without evidence.` : '.');
+  return cap(p.join('; ')) + '.';
+}
+
+function headlineKk(s: Summary): string {
+  const { total, ok, bad, weak } = parts(s);
+  const p: string[] = [];
+  if (s.sources_total && s.sources_missing) p.push(`жоқ дереккөздер: ${s.sources_missing} / ${s.sources_total}`);
+  if (s.sources_mismatch) p.push(`бұрмаланған дереккөздер: ${s.sources_mismatch}`);
+  if (bad) p.push(`дереккөздерге қайшы тұжырымдар: ${bad}`);
+  if (!p.length) return (total ? `Расталған тұжырымдар: ${ok} / ${total}` : 'Тексерілетін тұжырымдар табылмады') + (weak ? `, дәлелсіз: ${weak}.` : '.');
+  return cap(p.join('; ')) + '.';
 }
 
 const ru: Dict = {
@@ -182,6 +227,8 @@ const ru: Dict = {
   },
   status: { exists: 'Существует', mismatch: 'Данные искажены', not_found: 'Не существует', unreachable: 'Нет доступа', unchecked: 'Не проверить' },
   tier: { official: 'официальный или научный источник', reference: 'справочник', media: 'СМИ', other: 'прочий сайт' },
+  headline: headlineRu,
+  recheck: { note: 'Пояснения ниже — на языке исходной проверки.', button: 'Перепроверить на русском' },
   msg: {
     tooShort: 'Вставьте текст целиком — хотя бы пару предложений.', format: 'Неподдерживаемый формат. Загрузите .docx, .pdf, .txt или .md.',
     tooBig: 'Файл больше 10 МБ.', reportMissing: 'Отчёт не найден: возможно, сервер перезапускался. Запустите проверку заново.',
@@ -314,6 +361,8 @@ const en: Dict = {
   },
   status: { exists: 'Exists', mismatch: 'Details distorted', not_found: 'Does not exist', unreachable: 'No access', unchecked: 'Cannot check' },
   tier: { official: 'official or scholarly source', reference: 'reference work', media: 'news media', other: 'other website' },
+  headline: headlineEn,
+  recheck: { note: 'The explanations below are in the language of the original check.', button: 'Re-check in English' },
   msg: {
     tooShort: 'Paste the whole text — at least a couple of sentences.', format: 'Unsupported format. Upload a .docx, .pdf, .txt or .md file.',
     tooBig: 'The file is larger than 10 MB.', reportMissing: 'Report not found: the server may have restarted. Run the check again.',
@@ -446,6 +495,8 @@ const kk: Dict = {
   },
   status: { exists: 'Бар', mismatch: 'Деректер бұрмаланған', not_found: 'Жоқ', unreachable: 'Қолжетімсіз', unchecked: 'Тексеру мүмкін емес' },
   tier: { official: 'ресми немесе ғылыми дереккөз', reference: 'анықтамалық', media: 'БАҚ', other: 'басқа сайт' },
+  headline: headlineKk,
+  recheck: { note: 'Төмендегі түсіндірмелер бастапқы тексеру тілінде.', button: 'Қазақ тілінде қайта тексеру' },
   msg: {
     tooShort: 'Мәтінді толығымен қойыңыз — кемінде екі-үш сөйлем.', format: 'Қолдау көрсетілмейтін формат. .docx, .pdf, .txt немесе .md файлын жүктеңіз.',
     tooBig: 'Файл 10 МБ-тан үлкен.', reportMissing: 'Есеп табылмады: сервер қайта іске қосылған болуы мүмкін. Тексеруді қайта бастаңыз.',

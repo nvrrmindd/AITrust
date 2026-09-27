@@ -63,7 +63,7 @@ def _transient(events: list[dict]) -> bool:
 
 
 def _save_report(job: Job) -> None:
-    payload = {"id": job.id, "text": job.text, "events": job.events, "created": job.created, "filename": job.filename}
+    payload = {"id": job.id, "text": job.text, "events": job.events, "created": job.created, "filename": job.filename, "lang": job.lang}
     _report_path(job.id).write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     if not _transient(job.events):
         _cache_path(_key(job)).write_text(json.dumps(job.events, ensure_ascii=False), encoding="utf-8")
@@ -72,7 +72,7 @@ def _save_report(job: Job) -> None:
 def load_report(rid: str) -> Optional[dict]:
     if rid in _jobs and _jobs[rid].done:
         j = _jobs[rid]
-        return {"id": j.id, "text": j.text, "events": j.events, "created": j.created, "filename": j.filename}
+        return {"id": j.id, "text": j.text, "events": j.events, "created": j.created, "filename": j.filename, "lang": j.lang}
     p = _report_path(rid)
     if p.exists() and rid.replace("-", "").replace("_", "").isalnum():
         return json.loads(p.read_text(encoding="utf-8"))

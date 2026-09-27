@@ -801,3 +801,4 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
 :root[data-theme="dark"] .chips button { background: var(--surface-2); border-color: var(--line-strong); color: var(--ink); }
 :root[data-theme="dark"] .brand-q { background: linear-gradient(to top, rgba(167, 139, 250, .45) 0 45%, transparent 45%); }
 @media print { :root[data-theme="dark"] body { background: #fff; color: #000; } }
+.lang-note { margin: 12px 0 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--ink-2); }

@@ -305,7 +305,7 @@
         </div>
       }
       @if (summary(); as s) {
-        <h1 class="headline" [class.is-secondary]="doc()">{{ s.headline }}</h1>
+        <h1 class="headline" [class.is-secondary]="doc()">{{ t().headline(s) }}</h1>
       } @else {
         <h1 class="headline headline-pending">{{ stage() }}</h1>
       }
@@ -334,6 +334,11 @@
       }
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
       @for (n of notices(); track $index) { <p class="notice">{{ n }}</p> }
+      @if (!running() && reportLang() !== lang()) {
+        <p class="lang-note">{{ t().recheck.note }}
+          @if (!doc()) { <button type="button" class="ghost small" (click)="recheck()">{{ t().recheck.button }}</button> }
+        </p>
+      }
     </section>
 
     @if (doc() && bib().length) {

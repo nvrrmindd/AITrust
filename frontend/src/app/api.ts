@@ -77,7 +77,7 @@ export class Api {
     return () => es.close();
   }
 
-  async report(id: string): Promise<{ id: string; text: string; events: PipelineEvent[]; filename?: string | null } | null> {
+  async report(id: string): Promise<{ id: string; text: string; events: PipelineEvent[]; filename?: string | null; lang?: string } | null> {
     const r = await fetch(`${this.base}/api/reports/${encodeURIComponent(id)}`);
     return r.ok ? r.json() : null;
   }
