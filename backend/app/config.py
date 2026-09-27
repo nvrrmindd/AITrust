@@ -52,6 +52,8 @@ class Settings:
     llm_model_judge: str = field(default_factory=lambda: _env("LLM_MODEL_JUDGE"))
     gemini_api_key: str = field(default_factory=lambda: _env("GEMINI_API_KEY"))
     tavily_api_key: str = field(default_factory=lambda: _env("TAVILY_API_KEY"))
+    # free key from openalex.org: anonymous search gets paused under load
+    openalex_api_key: str = field(default_factory=lambda: _env("OPENALEX_API_KEY"))
     contact_email: str = field(default_factory=lambda: _env("CONTACT_EMAIL", "pruf@example.com"))
     data_dir: Path = field(default_factory=lambda: Path(_env("DATA_DIR", str(Path(__file__).resolve().parent.parent / "data"))))
     static_dir: Path = field(default_factory=lambda: Path(_env("STATIC_DIR", str(Path(__file__).resolve().parent.parent / "static"))))

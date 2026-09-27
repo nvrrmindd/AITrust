@@ -113,6 +113,10 @@ async def _safe_get(url: str, *, check_ssrf: bool, headers: Optional[dict]) -> F
 
 async def get_json(url: str, params: Optional[dict] = None) -> tuple[int, Optional[dict]]:
     """For well-known public APIs (Crossref, OpenAlex, doi.org, Wikipedia): no SSRF check needed."""
+    if url.startswith("https://api.openalex.org"):
+        params = {**(params or {}), "mailto": settings.contact_email}
+        if settings.openalex_api_key:
+            params["api_key"] = settings.openalex_api_key
     async with _sem:
         r = await client().get(url, params=params, headers={"Accept": "application/json"}, follow_redirects=True)
     try:

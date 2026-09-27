@@ -239,7 +239,8 @@ def certainty(sentence: str) -> tuple[str, list[str]]:
     if hedges:
         return "hedged", hedges
     strong = [a for a in ASSERTIVE if re.search(rf"(?<![\w]){re.escape(a)}(?![\w])", s)]
-    precise = [n for n in numbers(sentence) if not _is_year(n)]
+    no_refs = re.sub(r"\[[\d\s,;–\-]+(?:,\s*(?:с|c|p|pp)\.\s*[\d–\-]+)?\]", " ", sentence)  # [4], [1, с. 25] are markers, not facts
+    precise = [n for n in numbers(no_refs) if not _is_year(n)]
     if strong or precise:
         return "assertive", strong + [f"точное число {n}" for n in precise[:2]]
     return "neutral", []

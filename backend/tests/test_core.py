@@ -352,3 +352,8 @@ def test_llm_switches_model_when_daily_quota_is_gone(monkeypatch):
     monkeypatch.setattr(llm, "_openai_compatible", fake_call)
     assert asyncio.run(llm.complete_json("s", "u"))["verdict"] == "supports"
     assert used == ["m-a", "m-b"] and asyncio.run(llm.complete_json("s", "u")) and used[-1] == "m-b"
+
+
+def test_citation_markers_are_not_precise_numbers():
+    tone, markers = certainty("Студенты в 3 раза чаще сдают работы с несуществующими источниками [4].")
+    assert tone == "assertive" and markers == ["точное число 3"]
