@@ -3,9 +3,24 @@ import { FormsModule } from '@angular/forms';
 import { Api } from './api';
 import QRCode from 'qrcode';
 import { apa, gost } from './cite';
+import { DICTS, Dict, LANGS, Lang, detectLang } from './i18n';
 import {
   Citation, Claim, ClaimResult, Example, PipelineEvent, Replacement, SOURCE_STATUS, SourceCheck, Summary, TIER, VERDICT, Verdict, BibItem, DocumentMeta, FILE_FORMATS, Score,
 } from './models';
+
+function detectTheme(): 'light' | 'dark' {
+  const q = new URLSearchParams(location.search).get('theme');
+  if (q === 'light' || q === 'dark') return q;
+  try {
+    const saved = localStorage.getItem('trustable.theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch { /* storage unavailable */ }
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme: 'light' | 'dark') {
+  document.documentElement.dataset['theme'] = theme;
+}
 
 interface Segment { text: string; claim?: Claim; }
 interface Part { t: string; num: boolean; bad: boolean; }
@@ -33,44 +48,19 @@ export class App implements OnInit, OnDestroy {
   notices = signal<string[]>([]);
   openFaq = signal<number | null>(0);
   readonly year = new Date().getFullYear();
-  readonly WHO: Record<string, string> = { ai: 'Нейросеть', code: 'Код', registry: 'Реестры', web: 'Веб-поиск', you: 'Вы' };
-  readonly stairs = [
-    { who: 'ai', title: 'Разбор', text: 'Нейросеть делит ответ на отдельные утверждения и находит, на какой источник ссылается каждое. Ссылки и DOI код дополнительно находит сам.' },
-    { who: 'registry', title: 'Существует ли источник', text: 'DOI сверяем с мировым реестром doi.org, статьи ищем в Crossref и OpenAlex, веб-ссылки открываем напрямую. Нейросеть в этом не участвует.', out: 'Источник не существует', tone: 'red' },
-    { who: 'code', title: 'Чтение источника', text: 'Скачиваем страницу, PDF или аннотацию статьи и выбираем фрагменты, где сказано о том же. Сайт закрыт от ботов — читаем его копию через Jina Reader или веб-архив, пейвол — честное «нет доступа».', out: 'Нет доступа', tone: 'grey' },
-    { who: 'ai', title: 'Вердикт с цитатой', text: 'Нейросеть читает фрагменты и предлагает вердикт — обязательно с дословной цитатой из источника. Это предложение, а не приговор.' },
-    { who: 'code', title: 'Право вето', text: 'Код ищет цитату в тексте источника и сравнивает числа. Цитаты нет дословно — вердикт выбрасывается; числа не сходятся — «источник говорит другое», даже если нейросеть сказала «подтверждено».', out: 'В тексте 40% → в источнике 60%', tone: 'orange' },
-    { who: 'web', title: 'Если источника нет', text: 'Ищем в интернете и подтверждения, и опровержения. «Подтверждено» — только по официальному, научному или справочному сайту либо по двум независимым.' },
-    { who: 'you', title: 'Решение за вами', text: 'Вердикт, объяснение, цитата и ссылка на экране — проверить нас можно за пять секунд. Отчёт отправляется ссылкой, для документа — ещё и PDF с QR-кодом.', out: 'Подтверждено цитатой', tone: 'green' },
-  ];
-  readonly survey = {
-    n: 56,
-    rows: [
-      { label: 'Используют ИИ для учёбы хотя бы раз в неделю', value: 53, key: false },
-      { label: 'Воспользовались бы сервисом проверки', value: 54, key: false },
-      { label: 'Знают случаи наказания за выдуманные источники', value: 51, key: false },
-      { label: 'Просили у ИИ источники или статистику', value: 49, key: false },
-      { label: 'Ни разу не проверяли ответ ИИ на выдумки', value: 29, key: false },
-      { label: 'Всегда проверяют, что источник существует', value: 10, key: true },
-    ],
-  };
+  // numbers only: every label lives in i18n.ts
+  readonly survey = { n: 56, values: [53, 54, 51, 49, 29, 10], key: 5 };
   readonly bench = [
-    { label: 'Настоящие', total: 34, ok: 31, skip: 1, bad: 2 },
-    { label: 'Выдуманные', total: 23, ok: 17, skip: 6, bad: 0 },
-    { label: 'Искажённые', total: 15, ok: 15, skip: 0, bad: 0 },
+    { total: 34, ok: 31, skip: 1, bad: 2 },
+    { total: 23, ok: 17, skip: 6, bad: 0 },
+    { total: 15, ok: 15, skip: 0, bad: 0 },
   ];
-  readonly faq = [
-    { q: 'Это ещё один ИИ-детектор?',
-      a: 'Нет. Мы не угадываем, написан ли текст нейросетью. Мы проверяем, правда ли то, что в нём написано: существуют ли источники, говорят ли они то, что им приписали, и совпадают ли цифры.' },
-    { q: 'Почему проверке можно доверять, если в ней тоже есть нейросеть?',
-      a: 'Нейросеть разбирает текст и предлагает вердикт, но обязана подкрепить его дословной цитатой. Существует ли источник, решают реестры публикаций; есть ли цитата в источнике и совпадают ли числа — код, и он может отменить вердикт нейросети. А сама цитата всегда перед глазами — проверить нас можно за пять секунд.' },
-    { q: 'Какие тексты можно проверить?',
-      a: 'Лучше всего — ответы нейросетей со ссылками, а также статьи, новости, рефераты на русском и английском. Документы — .docx, .pdf, .txt, .md до 10 МБ: если в документе есть список литературы, проверим каждый источник из него, если нет — фактические утверждения из текста. Мнения, личные данные и советы не проверяем.' },
-    { q: 'Что значит «нет доступа»?',
-      a: 'Источник закрыт пейволом или защитой от ботов, либо научная база временно не ответила. Такой источник мы не называем выдуманным: повторите проверку позже или откройте ссылку сами.' },
-    { q: 'Что происходит с моим текстом?',
-      a: 'Для разбора текст передаётся провайдеру языковой модели (Gemini или Groq), а поисковые запросы — поисковому сервису. Отчёт хранится на сервере, чтобы открываться по ссылке. Мы не публикуем тексты и сами не используем их для обучения.' },
-  ];
+
+  // language & theme
+  readonly LANGS = LANGS;
+  lang = signal<Lang>(detectLang());
+  t = computed<Dict>(() => DICTS[this.lang()]);
+  theme = signal<'light' | 'dark'>(detectTheme());
   showHow = signal(false);
   mode = signal<'answer' | 'file'>('answer');
   dragging = signal(false);
@@ -105,6 +95,8 @@ export class App implements OnInit, OnDestroy {
   constructor(private api: Api) {}
 
   async ngOnInit() {
+    this.setLang(this.lang());
+    applyTheme(this.theme());
     this.api.health().then((h) => {
       if (!h) return;
       this.searchProvider.set(h.search);
@@ -220,7 +212,7 @@ export class App implements OnInit, OnDestroy {
     const text = this.input().trim();
     this.error.set(null);
     if (text.length < 20) {
-      this.error.set('Вставьте ответ ИИ целиком — хотя бы пару предложений.');
+      this.error.set(this.t().msg.tooShort);
       return;
     }
     try {
@@ -262,18 +254,18 @@ export class App implements OnInit, OnDestroy {
     this.error.set(null);
     const ext = file.name.toLowerCase().match(/\.[a-z]+$/)?.[0] ?? '';
     if (!FILE_FORMATS.split(',').includes(ext)) {
-      this.error.set('Неподдерживаемый формат. Загрузите .docx, .pdf, .txt или .md.');
+      this.error.set(this.t().msg.format);
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      this.error.set('Файл больше 10 МБ.');
+      this.error.set(this.t().msg.tooBig);
       return;
     }
     this.uploading.set(true);
     try {
       const { id, cached } = await this.api.checkFile(file);
       this.begin(id, '', cached);
-      this.stage.set(`Читаю «${file.name}»…`);
+      this.stage.set(this.t().msg.reading(file.name));
       history.pushState({}, '', `/r/${id}`);
       this.listen(id);
     } catch (e) {
@@ -283,10 +275,35 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  exTitle(e: Example): string {
+    const l = this.lang();
+    return (l === 'en' ? e.title_en : l === 'kk' ? e.title_kk : undefined) || e.title;
+  }
+
+  exSub(e: Example): string {
+    const l = this.lang();
+    return (l === 'en' ? e.subtitle_en : l === 'kk' ? e.subtitle_kk : undefined) || e.subtitle;
+  }
+
   goCheck(mode: 'answer' | 'file') {
     if (this.view() !== 'input') this.reset();
     this.mode.set(mode);
     setTimeout(() => this.scrollToId('check'));
+  }
+
+  setLang(l: Lang) {
+    this.lang.set(l);
+    this.api.lang = l;
+    document.documentElement.lang = l;
+    document.title = { ru: 'Trustable? — можно ли верить ИИ?', en: 'Trustable? — can you trust AI?', kk: 'Trustable? — ЖИ-ға сенуге бола ма?' }[l];
+    try { localStorage.setItem('trustable.lang', l); } catch { /* storage unavailable */ }
+  }
+
+  toggleTheme() {
+    const next = this.theme() === 'dark' ? 'light' : 'dark';
+    this.theme.set(next);
+    applyTheme(next);
+    try { localStorage.setItem('trustable.theme', next); } catch { /* storage unavailable */ }
   }
 
   toggleFaq(i: number) {
@@ -328,7 +345,7 @@ export class App implements OnInit, OnDestroy {
     this.qr.set('');
     this.summary.set(null);
     this.selectedId.set(null);
-    this.stage.set('Отправляю ответ на проверку…');
+    this.stage.set(this.t().msg.sending);
     this.running.set(true);
     this.view.set('result');
     window.scrollTo({ top: 0 });
@@ -341,7 +358,7 @@ export class App implements OnInit, OnDestroy {
   private async openReport(id: string) {
     const rep = await this.api.report(id);
     if (!rep) {
-      this.error.set('Отчёт не найден: возможно, сервер перезапускался. Запустите проверку заново.');
+      this.error.set(this.t().msg.reportMissing);
       history.replaceState({}, '', '/');
       return;
     }
@@ -362,7 +379,7 @@ export class App implements OnInit, OnDestroy {
       case 'extracted':
         this.claims.set(e.claims);
         this.citations.set(e.citations);
-        this.stage.set(`Нашли ${e.claims.length} утверждений и ${e.citations.length} источников. Проверяем…`);
+        this.stage.set(this.t().msg.found(e.claims.length, e.citations.length));
         break;
       case 'document':
         this.doc.set({ filename: e.filename, chars: e.chars, checked_at: e.checked_at });
@@ -376,7 +393,7 @@ export class App implements OnInit, OnDestroy {
         const withCheck = e.items.filter((it) => it.check);
         if (withCheck.length) this.checks.update((m) => ({ ...m, ...Object.fromEntries(withCheck.map((it) => [it.id, it.check!])) }));
         if (!this.citations().length) this.citations.set(e.items.map((it) => it.citation));
-        this.stage.set(`Список литературы: проверено ${this.bibChecked()} из ${this.bib().length}…`);
+        this.stage.set(this.t().msg.bibProgress(this.bibChecked(), this.bib().length));
         break;
       }
       case 'score':
@@ -432,7 +449,7 @@ export class App implements OnInit, OnDestroy {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2000);
     } catch {
-      prompt('Ссылка на отчёт:', url);
+      prompt(this.t().report.printReport, url);
     }
   }
 
@@ -443,14 +460,14 @@ export class App implements OnInit, OnDestroy {
       this.copiedRef.set(key);
       setTimeout(() => this.copiedRef() === key && this.copiedRef.set(null), 2000);
     } catch {
-      prompt('Ссылка на работу:', text);
+      prompt(this.t().report.source, text);
     }
   }
 
   // ------------------------------------------------------------ formatting helpers
 
   authorsShort(authors: string[]): string {
-    return authors.length > 3 ? `${authors.slice(0, 3).join(', ')} и др.` : authors.join(', ');
+    return authors.length > 3 ? `${authors.slice(0, 3).join(', ')} et al.` : authors.join(', ');
   }
 
   /** Split text into parts, marking numbers; numbers absent from `other` are flagged. */
@@ -478,9 +495,9 @@ export class App implements OnInit, OnDestroy {
 
   checkedAt(iso: string): string {
     try {
-      return new Date(iso).toLocaleString('ru-RU', { dateStyle: 'long', timeStyle: 'short' });
+      return new Date(iso).toLocaleString(this.t().locale, { dateStyle: 'long', timeStyle: 'short' });
     } catch { return iso; }
   }
 
-  seconds(ms: number): string { return (ms / 1000).toFixed(ms < 10000 ? 1 : 0).replace('.', ','); }
+  seconds(ms: number): string { return (ms / 1000).toFixed(ms < 10000 ? 1 : 0).replace('.', this.t().decimal); }
 }

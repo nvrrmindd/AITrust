@@ -5,6 +5,8 @@ import io
 import re
 import zipfile
 
+from .i18n import tr
+
 MAX_BYTES = 10 * 1024 * 1024
 MAX_CHARS = 60_000
 FORMATS = (".docx", ".pdf", ".txt", ".md")
@@ -18,11 +20,11 @@ def extract_text(filename: str, data: bytes) -> str:
     name = (filename or "").lower()
     ext = next((e for e in FORMATS if name.endswith(e)), "")
     if not ext:
-        raise DocumentError("Неподдерживаемый формат. Загрузите .docx, .pdf, .txt или .md.")
+        raise DocumentError(tr("doc.format"))
     if len(data) > MAX_BYTES:
-        raise DocumentError("Файл больше 10 МБ.")
+        raise DocumentError(tr("doc.too_big"))
     if not data.strip():
-        raise DocumentError("Файл пустой.")
+        raise DocumentError(tr("doc.empty"))
     if ext == ".docx":
         text = _docx(data)
     elif ext == ".pdf":
@@ -32,7 +34,7 @@ def extract_text(filename: str, data: bytes) -> str:
     text = re.sub(r"[ \t ]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
     if not text:
-        raise DocumentError("В файле нет текста.")
+        raise DocumentError(tr("doc.no_text"))
     return text[:MAX_CHARS]
 
 
@@ -53,7 +55,7 @@ def _docx(data: bytes) -> str:
 
         doc = Document(io.BytesIO(data))
     except Exception as e:  # noqa: BLE001
-        raise DocumentError("Не удалось открыть .docx — файл повреждён или это не Word-документ.") from e
+        raise DocumentError(tr("doc.docx_bad")) from e
 
     lines: list[str] = []
     # body in document order: paragraphs and tables interleaved
@@ -96,8 +98,8 @@ def _pdf(data: bytes) -> str:
         reader = PdfReader(io.BytesIO(data))
         pages = [(p.extract_text() or "") for p in reader.pages[:200]]
     except Exception as e:  # noqa: BLE001
-        raise DocumentError("Не удалось открыть PDF — файл повреждён или защищён паролем.") from e
+        raise DocumentError(tr("doc.pdf_bad")) from e
     text = "\n".join(pages)
     if len(re.sub(r"\s", "", text)) < 40:
-        raise DocumentError("PDF — это картинка, текст не найден. Загрузите .docx или PDF с текстовым слоем.")
+        raise DocumentError(tr("doc.pdf_scan"))
     return text

@@ -20,6 +20,7 @@ from rapidfuzz import fuzz
 
 from . import netsafe
 from .models import Citation, MatchedRecord, SourceCheck
+from .i18n import tr
 from .textutil import normalize
 
 log = logging.getLogger("pruf.sources")
@@ -68,16 +69,16 @@ def compare_metadata(cit: Citation, rec: MatchedRecord) -> list[str]:
     """Human-readable differences between what the AI cited and what really exists."""
     diffs: list[str] = []
     if cit.year and rec.year and abs(cit.year - rec.year) > 1:
-        diffs.append(f"год: в ответе {cit.year}, на самом деле {rec.year}")
+        diffs.append(tr("diff.year", a=cit.year, b=rec.year))
     if cit.authors and rec.authors:
         real = {_surname(a) for a in rec.authors}
         real_full = normalize(" ".join(rec.authors))
         cited = [_surname(a) for a in cit.authors if _surname(a)]
         missing = [a for a in cited if a not in real and a not in real_full]
         if cited and len(missing) == len(cited):
-            diffs.append(f"авторы: в ответе {', '.join(cit.authors[:3])}; на самом деле {', '.join(rec.authors[:3])}")
+            diffs.append(tr("diff.authors", a=", ".join(cit.authors[:3]), b=", ".join(rec.authors[:3])))
     if cit.title and rec.title and title_similarity(cit.title, rec.title) < 80:
-        diffs.append(f"название: на самом деле «{rec.title}»")
+        diffs.append(tr("diff.title", b=rec.title))
     return diffs
 
 
@@ -174,20 +175,20 @@ async def fetch_page(url: str) -> tuple[Optional[SourceCheck], SourceText, str]:
     try:
         res = await netsafe.safe_get(url)
     except netsafe.DNSFailure:
-        return _sc("not_found", "http", f"Домен «{urlparse(url).hostname}» не существует — такого сайта нет."), SourceText("", "none"), ""
+        return _sc("not_found", "http", tr("src.domain_missing", host=urlparse(url).hostname)), SourceText("", "none"), ""
     except netsafe.BlockedURL:
-        return _sc("unchecked", "http", "Ссылка ведёт на внутренний адрес — из соображений безопасности не открываем."), SourceText("", "none"), ""
+        return _sc("unchecked", "http", tr("src.internal")), SourceText("", "none"), ""
     except (httpx.TimeoutException, httpx.TransportError, httpx.TooManyRedirects) as e:
-        return _sc("unreachable", "http", f"Сайт не ответил ({type(e).__name__}). Это не значит, что источника нет."), SourceText("", "none"), ""
+        return _sc("unreachable", "http", tr("src.no_response", err=type(e).__name__)), SourceText("", "none"), ""
 
     if res.status in (404, 410):
-        return _sc("not_found", "http", f"Страница не существует (HTTP {res.status}). ИИ дал ссылку, которая никуда не ведёт."), SourceText("", "none"), ""
+        return _sc("not_found", "http", tr("src.page_404", status=res.status)), SourceText("", "none"), ""
     if res.status >= 400:
         mirrored = await _mirror(url)
         if mirrored:
             text, title, read_url = mirrored
             return None, SourceText(text, "full", read_url), title
-        return _sc("unreachable", "http", f"Сайт не пустил нас (HTTP {res.status}): пейвол или защита от ботов. Это не значит, что источника нет."), SourceText("", "none"), ""
+        return _sc("unreachable", "http", tr("src.blocked", status=res.status)), SourceText("", "none"), ""
 
     ctype = res.content_type.lower()
     if "pdf" in ctype or res.url.lower().endswith(".pdf"):
@@ -197,7 +198,7 @@ async def fetch_page(url: str) -> tuple[Optional[SourceCheck], SourceText, str]:
             return None, SourceText("", "none", res.url), ""
     text, title = html_to_text(res.body, res.url)
     if title and SOFT_404.search(title) and len(text) < 1500:
-        return _sc("not_found", "http", f"Сайт открылся, но это заглушка «{title[:80]}» — нужной страницы нет."), SourceText("", "none"), title
+        return _sc("not_found", "http", tr("src.soft_404", title=title[:80])), SourceText("", "none"), title
     return None, SourceText(text, "full" if len(text) > 300 else "none", res.url), title
 
 
@@ -293,10 +294,10 @@ async def check_citation(cit: Citation) -> tuple[SourceCheck, SourceText]:
         elif cit.title or cit.raw:
             sc, st = await _check_by_metadata(cit)
         else:
-            sc, st = _sc("unchecked", "none", "У источника нет ни ссылки, ни DOI, ни названия — проверить нечего."), SourceText("", "none")
+            sc, st = _sc("unchecked", "none", tr("src.nothing")), SourceText("", "none")
     except Exception as e:  # noqa: BLE001 — a single source must never crash the whole report
         log.exception("source check failed")
-        sc, st = _sc("unchecked", "error", f"Не удалось проверить источник: {type(e).__name__}."), SourceText("", "none")
+        sc, st = _sc("unchecked", "error", tr("src.failed", err=type(e).__name__)), SourceText("", "none")
     sc.citation_id = cit.id
     return sc, st
 
@@ -306,23 +307,23 @@ async def _check_doi(cit: Citation) -> tuple[SourceCheck, SourceText]:
     registered, cr, oa = await asyncio.gather(_doi_registered(doi), _crossref_doi(doi), _openalex_doi(doi))
     if registered is False and not cr and not oa:
         return _sc("not_found", "doi.org",
-                   f"DOI {doi} не зарегистрирован в мировом реестре DOI. Такой публикации не существует."), SourceText("", "none")
+                   tr("src.doi_missing", doi=doi)), SourceText("", "none")
     rec = _crossref_record(cr) if cr else (_openalex_record(oa) if oa else None)
     if rec is None:
         if registered:
-            return _sc("exists", "doi.org", f"DOI {doi} зарегистрирован, но метаданные недоступны."), SourceText("", "none")
-        return _sc("unreachable", "doi.org", "Реестры DOI не ответили — попробуйте позже."), SourceText("", "none")
+            return _sc("exists", "doi.org", tr("src.doi_no_meta", doi=doi)), SourceText("", "none")
+        return _sc("unreachable", "doi.org", tr("src.doi_down")), SourceText("", "none")
 
     diffs = compare_metadata(cit, rec)
     text = await _text_for_record(cr, oa)
     if cit.title and rec.title and title_similarity(cit.title, rec.title) < 60:
         return _sc("mismatch", "doi.org+crossref",
-                   f"DOI существует, но ведёт на другую работу: «{rec.title}». ИИ склеил ссылку из чужих данных.",
+                   tr("src.doi_other_work", title=rec.title),
                    matched=rec, differences=diffs, text_scope=text.scope), text
     if diffs:
-        return _sc("mismatch", "doi.org+crossref", "Публикация существует, но данные в ответе не совпадают с реальными.",
+        return _sc("mismatch", "doi.org+crossref", tr("src.pub_mismatch"),
                    matched=rec, differences=diffs, text_scope=text.scope), text
-    return _sc("exists", "doi.org+crossref", "Публикация существует, данные совпадают.", matched=rec, text_scope=text.scope), text
+    return _sc("exists", "doi.org+crossref", tr("src.pub_ok"), matched=rec, text_scope=text.scope), text
 
 
 async def _text_for_record(cr: Optional[dict], oa: Optional[dict]) -> SourceText:
@@ -344,9 +345,9 @@ async def _check_url(cit: Citation) -> tuple[SourceCheck, SourceText]:
         return status, text
     matched = MatchedRecord(title=title or None, url=text.url or cit.url)
     if text.scope == "none":
-        return _sc("exists", "http", "Страница существует, но текст не удалось извлечь (вероятно, страница рисуется скриптами).",
+        return _sc("exists", "http", tr("src.page_no_text"),
                    matched=matched), text
-    return _sc("exists", "http", "Страница существует и прочитана.", matched=matched, text_scope="full"), text
+    return _sc("exists", "http", tr("src.page_ok"), matched=matched, text_scope="full"), text
 
 
 async def _check_by_metadata(cit: Citation) -> tuple[SourceCheck, SourceText]:
@@ -369,28 +370,19 @@ async def _check_by_metadata(cit: Citation) -> tuple[SourceCheck, SourceText]:
         diffs = compare_metadata(cit, rec)
         text = await _text_for_record(cr, oa)
         if diffs:
-            return _sc("mismatch", "crossref+openalex", "Работа с таким названием есть, но данные в ответе не совпадают.",
+            return _sc("mismatch", "crossref+openalex", tr("src.work_mismatch"),
                        matched=rec, differences=diffs, text_scope=text.scope), text
-        return _sc("exists", "crossref+openalex", "Работа найдена в научных базах, данные совпадают.",
+        return _sc("exists", "crossref+openalex", tr("src.work_ok"),
                    matched=rec, text_scope=text.scope), text
 
     if not searched_ok:
-        if cr_items is not None:
-            why = ("В Crossref такой работы нет, но вторая база (OpenAlex) сейчас перегружена. Чтобы не назвать настоящий "
-                   "источник выдуманным, вердикт не выносим — повторите проверку через минуту.")
-        elif oa_items is not None:
-            why = ("В OpenAlex такой работы нет, но Crossref сейчас не ответил. Чтобы не назвать настоящий источник "
-                   "выдуманным, вердикт не выносим — повторите проверку через минуту.")
-        else:
-            why = "Научные базы Crossref и OpenAlex сейчас не ответили — повторите проверку через минуту."
-        return _sc("unreachable", "crossref+openalex", why), SourceText("", "none")
+        why = tr("src.openalex_busy") if cr_items is not None else tr("src.crossref_busy") if oa_items is not None else tr("src.dbs_busy")
+        return _sc("unreachable", "crossref+openalex", why, retry=True), SourceText("", "none")
 
     if cit.kind == "academic":
-        near = f" Ближайшее похожее: «{rec.title}»." if rec and score >= 60 else ""
+        near = tr("src.nearest", title=rec.title) if rec and score >= 60 else ""
         return _sc("not_found", "crossref+openalex",
-                   "Такой научной работы нет ни в Crossref, ни в OpenAlex (сотни миллионов публикаций). "
-                   "Скорее всего, ИИ её выдумал." + near,
+                   tr("src.fake_work") + near,
                    matched=rec if rec and score >= 60 else None), SourceText("", "none")
     return _sc("unchecked", "crossref+openalex",
-               "У источника нет ссылки и DOI, а в научных базах он не найден. Проверьте его вручную — "
-               "сам факт, что источник нельзя открыть, уже повод не доверять."), SourceText("", "none")
+               tr("src.unchecked_nodb")), SourceText("", "none")

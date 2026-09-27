@@ -29,9 +29,21 @@
   </a>
   <nav class="topnav">
     @if (view() === 'result') {
-      <button class="link-btn" type="button" (click)="reset()">Новая проверка</button>
+      <button class="link-btn" type="button" (click)="reset()">{{ t().nav.newCheck }}</button>
     }
-    <button class="link-btn" type="button" (click)="showHow.set(true)">Как мы проверяем</button>
+    <button class="link-btn hide-sm" type="button" (click)="showHow.set(true)">{{ t().nav.how }}</button>
+    <div class="lang-switch" role="group" [attr.aria-label]="t().nav.lang">
+      @for (l of LANGS; track l.id) {
+        <button type="button" [class.is-active]="lang() === l.id" [attr.aria-pressed]="lang() === l.id" [title]="l.name" (click)="setLang(l.id)">{{ l.label }}</button>
+      }
+    </div>
+    <button class="theme-btn" type="button" (click)="toggleTheme()" [attr.aria-label]="theme() === 'dark' ? t().nav.toLight : t().nav.toDark" [title]="theme() === 'dark' ? t().nav.toLight : t().nav.toDark">
+      @if (theme() === 'dark') {
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
+      } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>
+      }
+    </button>
   </nav>
 </header>
 
@@ -45,106 +57,101 @@
     </div>
     <section class="hero">
       <div class="hero-copy">
-        <p class="hero-kicker">Можно ли верить ответу ИИ?</p>
+        <p class="hero-kicker">{{ t().hero.kicker }}</p>
         <h1 class="wordmark">Trustable<span class="wm-q">?</span></h1>
-        <p class="lede">
-          Вставьте ответ ChatGPT, Gemini, Claude или любой другой нейросети. Trustable? разберёт его на утверждения,
-          откроет каждый источник и покажет, что там написано на самом деле, — дословной цитатой.
-        </p>
+        <p class="lede">{{ t().hero.lede }}</p>
         <ul class="hero-points">
-          <li><span class="hp-mark" aria-hidden="true">✓</span>Существует ли источник, проверяют реестры публикаций и сам сайт — не нейросеть</li>
-          <li><span class="hp-mark" aria-hidden="true">✓</span>Цифры сравнивает код</li>
-          <li><span class="hp-mark" aria-hidden="true">✓</span>Нет источника? Ищем и подтверждения, и опровержения</li>
+          @for (pt of t().hero.points; track $index) { <li><span class="hp-mark" aria-hidden="true">✓</span>{{ pt }}</li> }
         </ul>
-        <button class="primary" type="button" (click)="scrollToId('check')">Проверить текст</button>
+        <button class="primary" type="button" (click)="scrollToId('check')">{{ t().hero.cta }}</button>
       </div>
 
       <div class="hero-art" aria-hidden="true">
         <div class="art-doc">
           <div class="art-dots"><span></span><span></span><span></span></div>
           <p>
-            Нейросети регулярно ошибаются в ссылках: <span class="art-mark m-green">GPT-4 выдумывает 18% источников</span>.
-            ИИ-поисковики <span class="art-mark m-orange">ошибаются в 40% запросов</span>, а в Казахстане
-            <span class="art-mark m-red">68% студентов не проверяют ссылки (Ахметова, 2024)</span>.
+            {{ t().art.p1 }} <span class="art-mark m-green">{{ t().art.m1 }}</span>.
+            {{ t().art.p2 }} <span class="art-mark m-orange">{{ t().art.m2 }}</span>{{ t().art.p3 }}
+            <span class="art-mark m-red">{{ t().art.m3 }}</span>.
           </p>
         </div>
         <div class="art-card art-a">
-          <span class="pill small tone-orange">Источник говорит другое</span>
+          <span class="pill small tone-orange">{{ t().verdict.contradicted.label }}</span>
           <div class="art-nums"><s>40%</s><span>→</span><b>60%</b></div>
           <p class="art-quote">«…failed to retrieve the correct information more than <mark>60%</mark> of the time»</p>
-          <span class="art-ok">✓ цитата найдена дословно</span>
+          <span class="art-ok">{{ t().art.quoteOk }}</span>
         </div>
         <div class="art-card art-b">
-          <span class="pill small tone-red">Источник не существует</span>
-          <p>DOI не зарегистрирован в реестре doi.org</p>
+          <span class="pill small tone-red">{{ t().verdict.source_missing.label }}</span>
+          <p>{{ t().art.noDoi }}</p>
         </div>
         <div class="art-card art-c">
-          <span class="pill small tone-green">Подтверждено цитатой</span>
+          <span class="pill small tone-green">{{ t().verdict.supported.label }}</span>
         </div>
       </div>
     </section>
 
-    <section class="trust-strip" aria-label="Источники проверки">
-      <span class="ts-label">Проверяем по</span>
+    <section class="trust-strip" [attr.aria-label]="t().trust.aria">
+      <span class="ts-label">{{ t().trust.label }}</span>
       <ul>
         <li><a href="https://www.doi.org" target="_blank" rel="noopener">doi.org</a></li>
         <li><a href="https://www.crossref.org" target="_blank" rel="noopener">Crossref</a></li>
         <li><a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a></li>
         <li><a href="https://www.wikipedia.org" target="_blank" rel="noopener">Wikipedia</a></li>
-        <li><a href="https://tavily.com" target="_blank" rel="noopener">веб-поиск</a></li>
-        <li><button type="button" (click)="scrollToId('who-checks')">сайт первоисточника</button></li>
+        <li><a href="https://tavily.com" target="_blank" rel="noopener">{{ t().trust.web }}</a></li>
+        <li><button type="button" (click)="scrollToId('who-checks')">{{ t().trust.primary }}</button></li>
       </ul>
     </section>
 
     <section id="check" class="check">
-      <h2 class="section-title">Что проверяем?</h2>
-      <div class="tabs" role="tablist" aria-label="Что проверяем">
+      <h2 class="section-title">{{ t().check.title }}</h2>
+      <div class="tabs" role="tablist" [attr.aria-label]="t().check.title">
         <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'answer'" [attr.aria-selected]="mode() === 'answer'"
-          (click)="mode.set('answer'); error.set(null)">Текст</button>
+          (click)="mode.set('answer'); error.set(null)">{{ t().check.tabText }}</button>
         <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'file'" [attr.aria-selected]="mode() === 'file'"
-          (click)="mode.set('file'); error.set(null)">Документ</button>
+          (click)="mode.set('file'); error.set(null)">{{ t().check.tabDoc }}</button>
       </div>
 
       @if (mode() === 'file') {
-      <section class="composer" aria-label="Проверка документа">
+      <section class="composer" [attr.aria-label]="t().check.tabDoc">
         <label class="dropzone" [class.is-drag]="dragging()" [class.is-busy]="uploading()"
           (dragover)="$event.preventDefault(); dragging.set(true)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
           <input type="file" [accept]="FILE_FORMATS" (change)="onPick($event)" [disabled]="uploading()">
           <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h17l9 9v27a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M29 6v9h9"/><path d="M17 24h14M17 30h14M17 36h8"/></svg>
-          <span class="dz-title">{{ uploading() ? 'Загружаю…' : 'Перетащите документ сюда' }}</span>
-          <span class="dz-sub">курсовая, статья, эссе, отчёт, любой документ · .docx, .pdf, .txt, .md · до 10 МБ</span>
-          <span class="dz-pick">или выберите файл</span>
+          <span class="dz-title">{{ uploading() ? t().check.dzBusy : t().check.dzTitle }}</span>
+          <span class="dz-sub">{{ t().check.dzSub }}</span>
+          <span class="dz-pick">{{ t().check.dzPick }}</span>
         </label>
-        <p class="hint">Проверим каждый источник и утверждения, которые на него ссылаются.</p>
+        <p class="hint">{{ t().check.dzHint }}</p>
         <div class="composer-foot">
-          <button class="ghost" type="button" (click)="runSample()" [disabled]="uploading()">Попробовать на примере (DOCX)</button>
+          <button class="ghost" type="button" (click)="runSample()" [disabled]="uploading()">{{ t().check.sample }}</button>
         </div>
         @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
       </section>
       } @else {
-      <section class="composer" aria-label="Проверка текста">
-        <label for="answer" class="composer-label">Текст для проверки</label>
+      <section class="composer" [attr.aria-label]="t().check.textLabel">
+        <label for="answer" class="composer-label">{{ t().check.textLabel }}</label>
         <textarea id="answer" rows="10" [ngModel]="input()" (ngModelChange)="input.set($event)"
-          placeholder="Вставьте любой текст: ответ нейросети, статью, новость, абзац из реферата. Если у текста есть список источников — вставьте и его."></textarea>
+          [placeholder]="t().check.placeholder"></textarea>
         <div class="composer-foot">
-          <span class="hint">{{ input().length }} / 12 000 символов</span>
-          <button class="primary" type="button" (click)="run()" [disabled]="input().trim().length < 20">Проверить</button>
+          <span class="hint">{{ input().length }} / 12 000 {{ t().check.chars }}</span>
+          <button class="primary" type="button" (click)="run()" [disabled]="input().trim().length < 20">{{ t().check.run }}</button>
         </div>
         @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
         @if (searchProvider() === 'wikipedia') {
-          <p class="notice">Веб-поиск не подключён: утверждения без источников проверяются только по Википедии.</p>
+          <p class="notice">{{ t().check.wikiNotice }}</p>
         }
       </section>
       }
 
       @if (mode() === 'answer' && examples().length) {
-        <section class="examples" aria-label="Примеры">
-          <h3>Или посмотрите на примерах</h3>
+        <section class="examples" [attr.aria-label]="t().check.examples">
+          <h3>{{ t().check.examples }}</h3>
           <div class="example-list">
             @for (e of examples(); track e.id) {
               <button type="button" class="example" (click)="useExample(e)">
-                <span class="example-title">{{ e.title }}</span>
-                <span class="example-sub">{{ e.subtitle }}</span>
+                <span class="example-title">{{ exTitle(e) }}</span>
+                <span class="example-sub">{{ exSub(e) }}</span>
               </button>
             }
           </div>
@@ -155,16 +162,16 @@
     <section id="who-checks" class="who-checks band">
       <svg class="chrome c-band-splat" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
       <svg class="chrome c-band-drop" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-drop" fill="url(#chrome)"/><use href="#p-drop" fill="url(#irid)"/></g></svg>
-      <h2 class="section-title">Путь одного утверждения</h2>
-      <p class="section-sub">Каждое утверждение поднимается по этой лестнице. Нейросеть на ней дважды: разбирает текст и предлагает вердикт с цитатой. Всё остальное — реестры и код, и у кода право вето.</p>
+      <h2 class="section-title">{{ t().stairs.title }}</h2>
+      <p class="section-sub">{{ t().stairs.sub }}</p>
       <ol class="stairs">
-        @for (st of stairs; track $index) {
+        @for (st of t().stairs.steps; track $index) {
           <li class="stair" [style.--i]="$index">
             <span class="stair-node">{{ $index + 1 }}</span>
             <div class="stair-body">
               <div class="stair-head">
                 <h3>{{ st.title }}</h3>
-                <span class="who who-{{ st.who }}">{{ WHO[st.who] }}</span>
+                <span class="who who-{{ st.who }}">{{ t().stairs.who[st.who] }}</span>
               </div>
               <p>{{ st.text }}</p>
               @if (st.out) { <p class="stair-out"><span class="pill small tone-{{ st.tone }}">{{ st.out }}</span></p> }
@@ -177,52 +184,52 @@
     <section class="numbers-sec">
       <svg class="chrome c-steps-dot1" viewBox="0 0 140 140" aria-hidden="true"><g filter="url(#gloss)"><circle cx="70" cy="70" r="36" fill="url(#chrome)"/></g></svg>
       <svg class="chrome c-steps-dot2" viewBox="0 0 140 140" aria-hidden="true"><g filter="url(#gloss)"><circle cx="70" cy="70" r="36" fill="url(#chrome)"/></g></svg>
-      <h2 class="section-title">Проблема и результат — в цифрах</h2>
+      <h2 class="section-title">{{ t().numbers.title }}</h2>
       <div class="charts">
         <figure class="chart">
           <figcaption>
-            <h3>Опрос студентов</h3>
-            <p>{{ survey.n }} студентов, сентябрь 2026</p>
+            <h3>{{ t().numbers.surveyTitle }}</h3>
+            <p>{{ t().numbers.surveySub(survey.n) }}</p>
           </figcaption>
           <ul class="hbars" role="list">
-            @for (b of survey.rows; track b.label) {
-              <li class="hbar" [class.is-key]="b.key" [attr.data-tip]="b.value + ' из ' + survey.n">
-                <span class="hbar-label">{{ b.label }}</span>
-                <span class="hbar-track"><span class="hbar-fill" [style.width.%]="100 * b.value / survey.n"></span></span>
-                <span class="hbar-val">{{ b.value }} из {{ survey.n }}</span>
+            @for (v of survey.values; track $index) {
+              <li class="hbar" [class.is-key]="$index === survey.key" [attr.data-tip]="v + ' ' + t().numbers.of + ' ' + survey.n">
+                <span class="hbar-label">{{ t().numbers.surveyRows[$index] }}</span>
+                <span class="hbar-track"><span class="hbar-fill" [style.width.%]="100 * v / survey.n"></span></span>
+                <span class="hbar-val">{{ v }} {{ t().numbers.of }} {{ survey.n }}</span>
               </li>
             }
           </ul>
-          <p class="chart-note">Источники у ИИ просят 49 из 56, но всегда проверяют их только 10. А о наказаниях за выдуманные ссылки знают 51.</p>
+          <p class="chart-note">{{ t().numbers.surveyNote }}</p>
         </figure>
 
         <figure class="chart">
           <figcaption>
-            <h3>Проверка на 72 размеченных ссылках</h3>
-            <p>Что Trustable? сказал о ссылках, которые команда разметила вручную</p>
+            <h3>{{ t().numbers.benchTitle }}</h3>
+            <p>{{ t().numbers.benchSub }}</p>
           </figcaption>
           <ul class="legend" aria-hidden="true">
-            <li><span class="lg lg-ok"></span>Верно</li><li><span class="lg lg-skip"></span>Не удалось проверить</li><li><span class="lg lg-bad"></span>Ошибка</li>
+            <li><span class="lg lg-ok"></span>{{ t().numbers.ok }}</li><li><span class="lg lg-skip"></span>{{ t().numbers.skip }}</li><li><span class="lg lg-bad"></span>{{ t().numbers.bad }}</li>
           </ul>
           <ul class="sbars" role="list">
-            @for (r of bench; track r.label) {
+            @for (r of bench; track $index) {
               <li class="sbar">
-                <span class="sbar-label">{{ r.label }} <b>{{ r.total }}</b></span>
+                <span class="sbar-label">{{ t().numbers.benchRows[$index] }} <b>{{ r.total }}</b></span>
                 <span class="sbar-track">
-                  @if (r.ok) { <span class="seg seg-ok" [style.flex-grow]="r.ok" [attr.data-tip]="'Верно: ' + r.ok">{{ r.ok }}</span> }
-                  @if (r.skip) { <span class="seg seg-skip" [style.flex-grow]="r.skip" [attr.data-tip]="'Не удалось проверить: ' + r.skip">{{ r.skip }}</span> }
-                  @if (r.bad) { <span class="seg seg-bad" [style.flex-grow]="r.bad" [attr.data-tip]="'Ошибка: ' + r.bad">{{ r.bad }}</span> }
+                  @if (r.ok) { <span class="seg seg-ok" [style.flex-grow]="r.ok" [attr.data-tip]="t().numbers.ok + ': ' + r.ok">{{ r.ok }}</span> }
+                  @if (r.skip) { <span class="seg seg-skip" [style.flex-grow]="r.skip" [attr.data-tip]="t().numbers.skip + ': ' + r.skip">{{ r.skip }}</span> }
+                  @if (r.bad) { <span class="seg seg-bad" [style.flex-grow]="r.bad" [attr.data-tip]="t().numbers.bad + ': ' + r.bad">{{ r.bad }}</span> }
                 </span>
               </li>
             }
           </ul>
-          <p class="chart-note">Ни один настоящий источник не назван выдуманным: две ошибки — настоящие ссылки, названные искажёнными. «Не удалось проверить» — база временно не ответила, и вместо догадки мы честно говорим «не знаем».</p>
+          <p class="chart-note">{{ t().numbers.benchNote }}</p>
           <details class="chart-table">
-            <summary>Показать таблицей</summary>
+            <summary>{{ t().numbers.showTable }}</summary>
             <table>
-              <thead><tr><th>Размечено как</th><th>Верно</th><th>Не удалось проверить</th><th>Ошибка</th></tr></thead>
+              <thead><tr><th>{{ t().numbers.labelledAs }}</th><th>{{ t().numbers.ok }}</th><th>{{ t().numbers.skip }}</th><th>{{ t().numbers.bad }}</th></tr></thead>
               <tbody>
-                @for (r of bench; track r.label) { <tr><td>{{ r.label }} ({{ r.total }})</td><td>{{ r.ok }}</td><td>{{ r.skip }}</td><td>{{ r.bad }}</td></tr> }
+                @for (r of bench; track $index) { <tr><td>{{ t().numbers.benchRows[$index] }} ({{ r.total }})</td><td>{{ r.ok }}</td><td>{{ r.skip }}</td><td>{{ r.bad }}</td></tr> }
               </tbody>
             </table>
           </details>
@@ -232,37 +239,29 @@
 
     <section class="audience">
       <svg class="chrome c-aud-drop" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-drop" fill="url(#chrome)"/><use href="#p-drop" fill="url(#irid)"/></g></svg>
-      <h2 class="section-title">Кому пригодится</h2>
+      <h2 class="section-title">{{ t().audience.title }}</h2>
       <ul class="personas">
-        <li class="persona">
-          <span class="p-who">Студентам</span>
-          <p>Проверить реферат или курсовую до сдачи, а вместо выдуманной ссылки получить реальные работы по теме в формате ГОСТ или APA.</p>
-          <button type="button" class="p-go" (click)="goCheck('file')">Проверить документ →</button>
-        </li>
-        <li class="persona">
-          <span class="p-who">Преподавателям</span>
-          <p>Загрузить работу и увидеть, сколько источников из списка литературы настоящие. PDF-отчёт с QR-кодом — к проверке.</p>
-          <button type="button" class="p-go" (click)="goCheck('file')">Загрузить работу →</button>
-        </li>
-        <li class="persona">
-          <span class="p-who">Всем, кто читает</span>
-          <p>Проверить ответ нейросети, статью или пост перед тем, как поверить или поделиться.</p>
-          <button type="button" class="p-go" (click)="goCheck('answer')">Проверить текст →</button>
-        </li>
+        @for (p of t().audience.rows; track $index) {
+          <li class="persona">
+            <span class="p-who">{{ p.who }}</span>
+            <p>{{ p.text }}</p>
+            <button type="button" class="p-go" (click)="goCheck(p.mode)">{{ p.go }}</button>
+          </li>
+        }
       </ul>
     </section>
 
     <section class="cta">
       <svg class="chrome c-cta" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
-      <h2>Прежде чем поверить — проверьте.</h2>
-      <p>Вставьте текст или загрузите документ. Утверждения подсветятся через несколько секунд, вердикты — по мере проверки.</p>
-      <button class="primary" type="button" (click)="scrollToId('check')">Проверить текст</button>
+      <h2>{{ t().cta.title }}</h2>
+      <p>{{ t().cta.text }}</p>
+      <button class="primary" type="button" (click)="scrollToId('check')">{{ t().cta.button }}</button>
     </section>
 
     <section class="faq">
       <svg class="chrome c-faq-splat" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
-      <h2 class="section-title">Частые вопросы</h2>
-      @for (q of faq; track $index) {
+      <h2 class="section-title">{{ t().faq.title }}</h2>
+      @for (q of t().faq.items; track $index) {
         <div class="faq-item" [class.is-open]="openFaq() === $index">
           <button type="button" class="faq-q" (click)="toggleFaq($index)" [attr.aria-expanded]="openFaq() === $index">
             {{ q.q }}<span class="faq-sign" aria-hidden="true">{{ openFaq() === $index ? '−' : '+' }}</span>
@@ -280,13 +279,13 @@
     @if (doc(); as d) {
       <section class="print-only print-meta">
         <div>
-          <p class="pm-brand">Trustable? — проверка по источникам</p>
-          <p><b>Файл:</b> {{ d.filename }}</p>
-          <p><b>Дата проверки:</b> {{ checkedAt(d.checked_at) }}</p>
-          <p><b>Отчёт:</b> {{ reportUrl() }}</p>
-          <p class="pm-caption">Отчёт можно проверить по ссылке</p>
+          <p class="pm-brand">{{ t().report.printBrand }}</p>
+          <p><b>{{ t().report.printFile }}</b> {{ d.filename }}</p>
+          <p><b>{{ t().report.printDate }}</b> {{ checkedAt(d.checked_at) }}</p>
+          <p><b>{{ t().report.printReport }}</b> {{ reportUrl() }}</p>
+          <p class="pm-caption">{{ t().report.printCaption }}</p>
         </div>
-        @if (qr()) { <img class="pm-qr" [src]="qr()" alt="QR-код ссылки на отчёт" width="120" height="120"> }
+        @if (qr()) { <img class="pm-qr" [src]="qr()" [alt]="t().report.qrAlt" width="120" height="120"> }
       </section>
     }
     <section class="verdict-bar" [class.is-running]="running()">
@@ -295,12 +294,12 @@
         <div class="doc-score">
           <span class="doc-file">{{ d.filename }}</span>
           @if (bib().length) {
-          <p class="score-big">Достоверность источников: <b>{{ sc.verified }} из {{ sc.total }}</b></p>
+          <p class="score-big">{{ t().report.scoreTitle }} <b>{{ sc.verified }} {{ t().numbers.of }} {{ sc.total }}</b></p>
           <p class="score-sub">
-            Выдумано: <b [class.bad]="sc.fabricated">{{ sc.fabricated }}</b>,
-            искажено: <b [class.warn]="sc.distorted">{{ sc.distorted }}</b>,
-            нет доступа: <b>{{ sc.unreachable }}</b>
-            @if (!score() && bib().length) { <span class="meta"> · проверено {{ bibChecked() }} из {{ bib().length }}</span> }
+            {{ t().report.fabricated }}: <b [class.bad]="sc.fabricated">{{ sc.fabricated }}</b>,
+            {{ t().report.distorted }}: <b [class.warn]="sc.distorted">{{ sc.distorted }}</b>,
+            {{ t().report.unreachable }}: <b>{{ sc.unreachable }}</b>
+            @if (!score() && bib().length) { <span class="meta"> · {{ t().report.checkedOf(bibChecked(), bib().length) }}</span> }
           </p>
           }
         </div>
@@ -311,20 +310,20 @@
         <h1 class="headline headline-pending">{{ stage() }}</h1>
       }
       <div class="bar-row">
-        <ul class="tally" aria-label="Итоги по утверждениям">
+        <ul class="tally" [attr.aria-label]="t().report.tallyAria">
           @for (v of legend; track v) {
             <li class="tally-item tone-{{ VERDICT[v].tone }}" [class.is-zero]="!liveCounts()[v]">
-              <span class="dot"></span>{{ VERDICT[v].short }} <b>{{ liveCounts()[v] || 0 }}</b>
+              <span class="dot"></span>{{ t().verdict[v].short }} <b>{{ liveCounts()[v] || 0 }}</b>
             </li>
           }
         </ul>
         <div class="bar-actions">
           @if (summary(); as s) {
-            <span class="meta">{{ claims().length }} утверждений, {{ citations().length }} источников, {{ seconds(s.duration_ms) }} с{{ cached() ? ' (сохранённая проверка)' : '' }}</span>
-            <button class="ghost" type="button" (click)="share()">{{ copied() ? 'Ссылка скопирована' : 'Поделиться отчётом' }}</button>
-            @if (doc()) { <button class="primary" type="button" (click)="printReport()">Скачать отчёт PDF</button> }
+            <span class="meta">{{ t().report.meta(claims().length, citations().length, seconds(s.duration_ms), cached()) }}</span>
+            <button class="ghost" type="button" (click)="share()">{{ copied() ? t().report.copied : t().report.share }}</button>
+            @if (doc()) { <button class="primary" type="button" (click)="printReport()">{{ t().report.pdf }}</button> }
           } @else if (progress().total) {
-            <span class="meta">Проверено {{ progress().done }} из {{ progress().total }}</span>
+            <span class="meta">{{ t().report.progress(progress().done, progress().total) }}</span>
           }
         </div>
       </div>
@@ -339,10 +338,10 @@
 
     @if (doc() && bib().length) {
       <section class="panel bib-panel">
-        <h2>Список литературы</h2>
+        <h2>{{ t().report.bibTitle }}</h2>
         <div class="bib-scroll">
           <table class="bib-table">
-            <thead><tr><th>№</th><th>Ссылка в работе</th><th>Статус</th><th>Объяснение</th><th>Найденная работа</th></tr></thead>
+            <thead><tr>@for (c of t().report.bibCols; track $index) { <th>{{ c }}</th> }</tr></thead>
             <tbody>
               @for (b of bib(); track b.id) {
                 @let chk = b.check;
@@ -350,8 +349,8 @@
                   <td class="bib-n">{{ b.n }}</td>
                   <td class="bib-raw">{{ b.raw }}</td>
                   <td>
-                    @if (chk) { <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ SOURCE_STATUS[chk.status].label }}</span> }
-                    @else { <span class="pill small tone-pending">Проверяем</span> }
+                    @if (chk) { <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ t().status[chk.status] }}</span> }
+                    @else { <span class="pill small tone-pending">{{ t().report.checking }}</span> }
                   </td>
                   <td class="bib-why">
                     @if (chk) {
@@ -362,12 +361,12 @@
                       @if (chk.status === 'not_found') {
                         @let w = confirmedWork(b.id);
                         @if (w) {
-                          <span class="bib-repl">Реальная работа, которая подтверждает это утверждение:
+                          <span class="bib-repl">{{ t().report.confirmedWork }}
                             @if (w.url) { <a [href]="w.url" target="_blank" rel="noopener">{{ w.title }}</a> }
                             @else { {{ w.title }} }
                             ({{ w.year }})
                             <button type="button" class="ghost small no-print" (click)="copyRef(w, 'gost', b.id + ':gost')">
-                              {{ copiedRef() === b.id + ':gost' ? 'Скопировано' : 'ГОСТ' }}
+                              {{ copiedRef() === b.id + ':gost' ? t().report.copiedShort : t().report.gost }}
                             </button>
                           </span>
                         }
@@ -390,23 +389,23 @@
     }
 
     <div class="workspace">
-      <article class="doc" aria-label="Текст с разметкой">
+      <article class="doc" [attr.aria-label]="t().report.markedAria">
         <div class="doc-head">
-          <h2>{{ doc() ? 'Утверждения со ссылками в тексте работы' : 'Текст' }}</h2>
-          <span class="doc-hint">Нажмите на подсвеченное утверждение</span>
+          <h2>{{ doc() ? t().report.docTitle : t().report.textTitle }}</h2>
+          <span class="doc-hint">{{ t().report.hint }}</span>
         </div>
         <div class="doc-body">
           @for (seg of segments(); track $index) {
             @if (seg.claim; as c) {
               <button type="button" class="mark tone-{{ VERDICT[verdictOf(c.id)].tone }}"
                 [class.is-selected]="selectedId() === c.id" (click)="select(c.id)"
-                [attr.aria-label]="VERDICT[verdictOf(c.id)].label + ': ' + c.text">{{ seg.text }}</button>
+                [attr.aria-label]="t().verdict[verdictOf(c.id)].label + ': ' + c.text">{{ seg.text }}</button>
             } @else {<span>{{ seg.text }}</span>}
           }
         </div>
         @if (unplacedClaims().length) {
           <div class="unplaced">
-            <h3>Ещё утверждения</h3>
+            <h3>{{ t().report.more }}</h3>
             @for (c of unplacedClaims(); track c.id) {
               <button type="button" class="mark tone-{{ VERDICT[verdictOf(c.id)].tone }}" (click)="select(c.id)">{{ c.text }}</button>
             }
@@ -420,8 +419,8 @@
           @let v = r ? r.verdict : 'pending';
           <div class="card tone-{{ VERDICT[v].tone }}">
             <div class="card-verdict">
-              <span class="pill tone-{{ VERDICT[v].tone }}">{{ v === 'unverifiable' && r?.mode === 'attack' ? 'Не подтверждено: доказательств не нашли' : VERDICT[v].label }}</span>
-              @if (r?.mode === 'attack') { <span class="mode">Источник не указан — искали сами</span> }
+              <span class="pill tone-{{ VERDICT[v].tone }}">{{ v === 'unverifiable' && r?.mode === 'attack' ? t().report.attackUnverified : t().verdict[v].label }}</span>
+              @if (r?.mode === 'attack') { <span class="mode">{{ t().report.attackMode }}</span> }
             </div>
             <p class="claim-text">{{ sel.claim.text }}</p>
 
@@ -432,8 +431,8 @@
 
               @if (r.numbers?.mismatch) {
                 <div class="numbers">
-                  <div><span class="n-label">В тексте</span><span class="n-val bad">{{ r.numbers!.claim_numbers.join(', ') }}</span></div>
-                  <div><span class="n-label">В источнике</span><span class="n-val good">{{ r.numbers!.source_numbers.slice(0, 4).join(', ') }}</span></div>
+                  <div><span class="n-label">{{ t().report.inText }}</span><span class="n-val bad">{{ r.numbers!.claim_numbers.join(', ') }}</span></div>
+                  <div><span class="n-label">{{ t().report.inSource }}</span><span class="n-val good">{{ r.numbers!.source_numbers.slice(0, 4).join(', ') }}</span></div>
                 </div>
               }
 
@@ -445,10 +444,10 @@
                     }
                   </blockquote>
                   <figcaption>
-                    @if (ev.quote_verified) { <span class="verified">Цитата найдена в тексте дословно</span> }
-                    @if (ev.tier) { <span class="tier tier-{{ ev.tier }}">{{ TIER[ev.tier] }}</span> }
+                    @if (ev.quote_verified) { <span class="verified">{{ t().report.quoteVerified }}</span> }
+                    @if (ev.tier) { <span class="tier tier-{{ ev.tier }}">{{ t().tier[ev.tier] }}</span> }
                     <span class="src">
-                      {{ ev.stance === 'contradicts' ? 'Опровергает' : ev.stance === 'supports' ? 'Подтверждает' : 'Источник' }}:
+                      {{ ev.stance === 'contradicts' ? t().report.refutes : ev.stance === 'supports' ? t().report.supports : t().report.source }}:
                       @if (ev.url) { <a [href]="ev.url" target="_blank" rel="noopener">{{ ev.source_label || host(ev.url) }}</a> }
                       @else { {{ ev.source_label }} }
                     </span>
@@ -459,9 +458,9 @@
               @for (cid of sel.claim.citation_ids; track cid) {
                 @let chk = checks()[cid];
                 <div class="src-line">
-                  <span class="src-title">Ссылка в тексте: {{ citationLabel(cid) }}</span>
+                  <span class="src-title">{{ t().report.linkInText }} {{ citationLabel(cid) }}</span>
                   @if (chk) {
-                    <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ SOURCE_STATUS[chk.status].label }}</span>
+                    <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ t().status[chk.status] }}</span>
                     <span class="src-detail">{{ chk.detail }}</span>
                   }
                 </div>
@@ -469,11 +468,11 @@
 
               @if (r.search; as sr) {
                 <details class="searched">
-                  <summary>Что искали: запросов {{ sr.queries.length }}, прочитано страниц {{ sr.pages }}</summary>
+                  <summary>{{ t().report.searched(sr.queries.length, sr.pages) }}</summary>
                   <ul>
                     @for (q of sr.queries; track $index) { <li>{{ q }}</li> }
                   </ul>
-                  @if (sr.domains.length) { <p>Сайты: {{ sr.domains.join(', ') }}</p> }
+                  @if (sr.domains.length) { <p>{{ t().report.sites }} {{ sr.domains.join(', ') }}</p> }
                 </details>
               }
 
@@ -483,13 +482,13 @@
                 </ul>
               }
               @if (sel.claim.certainty === 'assertive' && r.verdict !== 'supported') {
-                <p class="tone-warning">Это сказано уверенно{{ sel.claim.certainty_markers.length ? ' (' + sel.claim.certainty_markers.join(', ') + ')' : '' }}, но доказательств нет.</p>
+                <p class="tone-warning">{{ t().report.assertive(sel.claim.certainty_markers.length ? ' (' + sel.claim.certainty_markers.join(', ') + ')' : '') }}</p>
               }
             }
           </div>
         } @else {
           <div class="card empty">
-            <p>{{ running() ? 'Результаты появятся здесь, как только первое утверждение будет проверено.' : 'Выберите утверждение слева, чтобы увидеть доказательства.' }}</p>
+            <p>{{ running() ? t().report.emptyRunning : t().report.emptyIdle }}</p>
           </div>
         }
       </aside>
@@ -497,16 +496,16 @@
 
     @if (citations().length && !doc()) {
       <section class="panel sources">
-        <h2>Источники из текста</h2>
+        <h2>{{ t().report.sourcesTitle }}</h2>
         <ul class="source-list">
           @for (c of sortedCitations(); track c.id) {
             @let chk = checks()[c.id];
             <li class="source" [class.tone-red]="chk?.status === 'not_found'">
               <div class="source-top">
                 @if (chk) {
-                  <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ SOURCE_STATUS[chk.status].label }}</span>
+                  <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ t().status[chk.status] }}</span>
                 } @else {
-                  <span class="pill small tone-pending">Проверяем</span>
+                  <span class="pill small tone-pending">{{ t().report.checking }}</span>
                 }
                 <span class="source-raw">{{ c.raw || c.title || c.url }}</span>
               </div>
@@ -516,18 +515,18 @@
                   <ul class="diffs">@for (d of chk.differences; track $index) { <li>{{ d }}</li> }</ul>
                 }
                 @if (chk.matched?.url && chk.status !== 'not_found') {
-                  <a class="source-link" [href]="chk.matched!.url" target="_blank" rel="noopener">Открыть: {{ host(chk.matched!.url) }}</a>
+                  <a class="source-link" [href]="chk.matched!.url" target="_blank" rel="noopener">{{ t().report.open }} {{ host(chk.matched!.url) }}</a>
                 }
-                <span class="source-method">Как проверено: {{ chk.method }}{{ chk.text_scope === 'abstract' ? ', по аннотации' : chk.text_scope === 'full' ? ', по полному тексту' : '' }}</span>
+                <span class="source-method">{{ t().report.how }} {{ chk.method }}{{ chk.text_scope === 'abstract' ? t().report.byAbstract : chk.text_scope === 'full' ? t().report.byFull : '' }}</span>
                 @if (chk.status === 'not_found') {
                   @let works = replacements()[c.id];
                   <div class="replacements">
                     @if (!works) {
-                      <p class="repl-note">{{ running() ? 'Ищем реальные работы по этой теме…' : '' }}</p>
+                      <p class="repl-note">{{ running() ? t().report.searching : '' }}</p>
                     } @else if (!works.length) {
-                      <p class="repl-note">Такой работы нет. Реальных работ по этой теме в OpenAlex не нашли.</p>
+                      <p class="repl-note">{{ t().report.noRepl }}</p>
                     } @else {
-                      <h3>Такой работы нет. Реальные работы по этой теме:</h3>
+                      <h3>{{ t().report.replTitle }}</h3>
                       <ul class="repl-list">
                         @for (w of works; track $index) {
                           @let key = c.id + ':' + $index;
@@ -541,23 +540,23 @@
                               <a class="repl-doi" [href]="'https://doi.org/' + w.doi" target="_blank" rel="noopener">doi.org/{{ w.doi }}</a>
                             }
                             @if (w.confirmed) {
-                              <span class="pill small tone-green">Аннотация подтверждает утверждение</span>
+                              <span class="pill small tone-green">{{ t().report.replConfirmed }}</span>
                               @if (w.quote) { <q class="repl-quote">{{ w.quote }}</q> }
                             } @else {
-                              <span class="pill small tone-grey">Тема похожа, проверьте сами</span>
+                              <span class="pill small tone-grey">{{ t().report.replSimilar }}</span>
                             }
                             <div class="repl-actions">
                               <button type="button" class="ghost small" (click)="copyRef(w, 'gost', key + ':gost')">
-                                {{ copiedRef() === key + ':gost' ? 'Скопировано' : 'Скопировать ссылку в формате ГОСТ' }}
+                                {{ copiedRef() === key + ':gost' ? t().report.copiedShort : t().report.copyGost }}
                               </button>
                               <button type="button" class="ghost small" (click)="copyRef(w, 'apa', key + ':apa')">
-                                {{ copiedRef() === key + ':apa' ? 'Скопировано' : 'в формате APA' }}
+                                {{ copiedRef() === key + ':apa' ? t().report.copiedShort : t().report.copyApa }}
                               </button>
                             </div>
                           </li>
                         }
                       </ul>
-                      <p class="repl-caption">Прежде чем ссылаться, откройте работу и убедитесь, что она подходит.</p>
+                      <p class="repl-caption">{{ t().report.replCaption }}</p>
                     }
                   </div>
                 }
@@ -571,34 +570,34 @@
     @if (summary()) {
       @let m = matrix();
       <section class="panel matrix-panel">
-        <h2>Уверенный тон ≠ доказательства</h2>
-        <p class="panel-sub">Мы не угадываем «уверенность модели». Мы смотрим, насколько уверенно звучит фраза, и сравниваем с тем, что нашлось в источниках.</p>
+        <h2>{{ t().report.matrixTitle }}</h2>
+        <p class="panel-sub">{{ t().report.matrixSub }}</p>
         <div class="matrix">
-          <div class="axis-y">Звучит уверенно</div>
+          <div class="axis-y">{{ t().report.sure }}</div>
           <div class="cell danger" [class.has]="m.dangerous.length">
             <b>{{ m.dangerous.length }}</b>
-            <span>Уверенно, но без доказательств</span>
+            <span>{{ t().report.dangerous }}</span>
             <div class="chips">@for (c of m.dangerous; track c.id) { <button type="button" (click)="select(c.id)">{{ c.id }}</button> }</div>
           </div>
           <div class="cell ok">
             <b>{{ m.safe.length }}</b>
-            <span>Уверенно и подтверждено</span>
+            <span>{{ t().report.safe }}</span>
             <div class="chips">@for (c of m.safe; track c.id) { <button type="button" (click)="select(c.id)">{{ c.id }}</button> }</div>
           </div>
-          <div class="axis-y">Звучит осторожно</div>
+          <div class="axis-y">{{ t().report.cautious }}</div>
           <div class="cell">
             <b>{{ m.cautiousWeak.length }}</b>
-            <span>Осторожно и без доказательств</span>
+            <span>{{ t().report.cautiousWeak }}</span>
             <div class="chips">@for (c of m.cautiousWeak; track c.id) { <button type="button" (click)="select(c.id)">{{ c.id }}</button> }</div>
           </div>
           <div class="cell ok">
             <b>{{ m.cautiousOk.length }}</b>
-            <span>Осторожно и подтверждено</span>
+            <span>{{ t().report.cautiousOk }}</span>
             <div class="chips">@for (c of m.cautiousOk; track c.id) { <button type="button" (click)="select(c.id)">{{ c.id }}</button> }</div>
           </div>
           <div></div>
-          <div class="axis-x">Не подтверждено</div>
-          <div class="axis-x">Подтверждено цитатой</div>
+          <div class="axis-x">{{ t().report.notConfirmed }}</div>
+          <div class="axis-x">{{ t().report.confirmedByQuote }}</div>
         </div>
       </section>
     }
@@ -608,17 +607,12 @@
 @if (showHow()) {
   <div class="modal-backdrop" (click)="showHow.set(false)">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="how-title" (click)="$event.stopPropagation()">
-      <button class="close" type="button" aria-label="Закрыть" (click)="showHow.set(false)">×</button>
-      <h2 id="how-title">Как мы проверяем</h2>
+      <button class="close" type="button" [attr.aria-label]="t().modal.close" (click)="showHow.set(false)">×</button>
+      <h2 id="how-title">{{ t().modal.title }}</h2>
       <ol class="how-steps">
-        <li><b>Разбор.</b> Языковая модель делит текст на проверяемые утверждения и находит, на какой источник ссылается каждое. Ссылки, DOI и маркеры [n] код дополнительно находит сам.</li>
-        <li><b>Существование источника — без нейросети.</b> DOI проверяется в мировом реестре doi.org, научные работы — в Crossref и OpenAlex, ссылки — прямым запросом. Пейвол или защита от ботов — это «нет доступа», а не «фейк».</li>
-        <li><b>Чтение источника.</b> Скачиваем текст страницы, открытый PDF или аннотацию статьи; если сайт закрыт от ботов — читаем его копию через Jina Reader или веб-архив. Выбираем самые релевантные фрагменты (BM25 + числа).</li>
-        <li><b>Вердикт с цитатой.</b> Модель-судья предлагает вердикт и обязана привести дословную цитату. Код ищет её в тексте источника: не нашлась — вердикт отбрасывается. Так мы проверяем собственную нейросеть.</li>
-        <li><b>Цифры — детерминированно.</b> Числа из утверждения сравниваются с числами из источника без участия модели.</li>
-        <li><b>Нет источника — атакуем.</b> Ищем не только подтверждения, но и опровержения, и показываем найденное цитатами. «Подтверждено» — только если цитата с официального, научного или справочного сайта либо с двух независимых сайтов.</li>
+        @for (st of t().modal.steps; track $index) { <li><b>{{ st.b }}</b> {{ st.t }}</li> }
       </ol>
-      <p class="modal-note">Мы не ставим «процент доверия». Честное «не удалось проверить» лучше ложной уверенности.</p>
+      <p class="modal-note">{{ t().modal.note }}</p>
     </div>
   </div>
 }
@@ -629,27 +623,27 @@
       <a class="brand" href="/" (click)="$event.preventDefault(); reset()">
         <span class="brand-name">Trustable<span class="brand-q">?</span></span>
       </a>
-      <p>Проверка текстов по источникам: цитата вместо «доверьтесь нам».</p>
+      <p>{{ t().footer.tagline }}</p>
     </div>
-    <nav class="sf-col" aria-label="Продукт">
-      <h3>Продукт</h3>
-      <button type="button" (click)="goCheck('answer')">Проверить текст</button>
-      <button type="button" (click)="goCheck('file')">Проверить документ</button>
-      <button type="button" (click)="showHow.set(true)">Как мы проверяем</button>
+    <nav class="sf-col" [attr.aria-label]="t().footer.product">
+      <h3>{{ t().footer.product }}</h3>
+      <button type="button" (click)="goCheck('answer')">{{ t().footer.checkText }}</button>
+      <button type="button" (click)="goCheck('file')">{{ t().footer.checkDoc }}</button>
+      <button type="button" (click)="showHow.set(true)">{{ t().footer.how }}</button>
     </nav>
-    <nav class="sf-col" aria-label="Разработчикам">
-      <h3>Разработчикам</h3>
+    <nav class="sf-col" [attr.aria-label]="t().footer.dev">
+      <h3>{{ t().footer.dev }}</h3>
       <a href="/docs" target="_blank" rel="noopener">API</a>
       <a href="https://github.com/nvrrmindd/AITrust" target="_blank" rel="noopener">GitHub</a>
     </nav>
     <div class="sf-col">
-      <h3>Поддержка</h3>
+      <h3>{{ t().footer.support }}</h3>
       @if (supportEmail(); as mail) { <a [href]="'mailto:' + mail">{{ mail }}</a> }
-      <a href="https://github.com/nvrrmindd/AITrust/issues" target="_blank" rel="noopener">Сообщить об ошибке</a>
+      <a href="https://github.com/nvrrmindd/AITrust/issues" target="_blank" rel="noopener">{{ t().footer.bug }}</a>
     </div>
   </div>
   <div class="sf-bottom">
     <span>© {{ year }} Trustable?</span>
-    <span>Вердикт — с доказательством. Последнее слово — за вами.</span>
+    <span>{{ t().footer.motto }}</span>
   </div>
 </footer>

@@ -4,6 +4,12 @@ import { Example, PipelineEvent } from './models';
 @Injectable({ providedIn: 'root' })
 export class Api {
   private base = '';
+  lang: 'ru' | 'en' | 'kk' = 'ru';
+  private readonly MSG = {
+    ru: { server: 'Ошибка сервера', short: 'Текст слишком короткий: вставьте его целиком.', sample: 'Пример не найден на сервере.' },
+    en: { server: 'Server error', short: 'The text is too short: paste all of it.', sample: 'Example not found on the server.' },
+    kk: { server: 'Сервер қатесі', short: 'Мәтін тым қысқа: толығымен қойыңыз.', sample: 'Мысал серверден табылмады.' },
+  };
 
   async examples(): Promise<Example[]> {
     const r = await fetch(`${this.base}/api/examples`);
@@ -23,14 +29,14 @@ export class Api {
     const r = await fetch(`${this.base}/api/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, lang: this.lang }),
     });
     if (!r.ok) {
-      let msg = `Ошибка сервера (${r.status})`;
+      let msg = `${this.MSG[this.lang].server} (${r.status})`;
       try {
         const body = await r.json();
         if (typeof body.detail === 'string') msg = body.detail;
-        else if (r.status === 422) msg = 'Текст слишком короткий: вставьте ответ ИИ целиком.';
+        else if (r.status === 422) msg = this.MSG[this.lang].short;
       } catch { /* keep default */ }
       throw new Error(msg);
     }
@@ -41,9 +47,10 @@ export class Api {
   async checkFile(file: File): Promise<{ id: string; cached: boolean; filename: string }> {
     const form = new FormData();
     form.append('file', file, file.name);
+    form.append('lang', this.lang);
     const r = await fetch(`${this.base}/api/check-file`, { method: 'POST', body: form });
     if (!r.ok) {
-      let msg = `Ошибка сервера (${r.status})`;
+      let msg = `${this.MSG[this.lang].server} (${r.status})`;
       try {
         const body = await r.json();
         if (typeof body.detail === 'string') msg = body.detail;
@@ -55,7 +62,7 @@ export class Api {
 
   async sampleDocx(): Promise<File> {
     const r = await fetch(`${this.base}/api/sample-docx`);
-    if (!r.ok) throw new Error('Пример курсовой не найден на сервере.');
+    if (!r.ok) throw new Error(this.MSG[this.lang].sample);
     return new File([await r.blob()], 'sample_coursework.docx', {
       type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });

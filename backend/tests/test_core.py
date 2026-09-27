@@ -390,3 +390,28 @@ def test_attribution_without_url_doi_year_is_not_a_citation(monkeypatch):
     monkeypatch.setattr(llm, "complete_json", fake)
     claims, cits = asyncio.run(ex.extract(text))
     assert cits == [] and claims[0].citation_ids == [] and claims[0].queries  # goes to web search instead
+
+
+def test_messages_follow_the_check_language():
+    from app import i18n
+    from app.judge import _in_lang
+    from app.prompts import JUDGE_CITED_SYSTEM
+    for lang, word in (("ru", "не существует"), ("en", "does not exist"), ("kk", "жоқ")):
+        token = i18n.LANG.set(lang)
+        try:
+            assert word in i18n.tr("src.doi_missing", doi="10.1/x")
+            assert i18n.LLM_LANGUAGE[lang] in _in_lang(JUDGE_CITED_SYSTEM)
+        finally:
+            i18n.LANG.reset(token)
+    token = i18n.LANG.set("en")
+    try:
+        assert i18n.headline(4, 2, 0, 1, 1, 5, 0) == "2 of 4 sources do not exist; 1 claim contradicts the sources."
+    finally:
+        i18n.LANG.reset(token)
+    assert i18n.headline(4, 2, 0, 0, 0, 0, 0) == "2 из 4 источников не существуют."
+    assert all(set(v) >= {"ru", "en", "kk"} for v in i18n.MESSAGES.values())
+
+
+def test_cache_key_keeps_russian_and_separates_other_languages():
+    from app.store import text_key
+    assert text_key("abc") == text_key("abc", "", "ru") != text_key("abc", "", "en") != text_key("abc", "", "kk")

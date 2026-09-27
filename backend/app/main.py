@@ -7,12 +7,13 @@ import time
 from collections import defaultdict, deque
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from . import store
 from .config import settings
+from .i18n import LANG, norm_lang, tr
 from .documents import MAX_BYTES, DocumentError, extract_text
 from .models import CheckRequest
 from .pipeline import PIPELINE_VERSION
@@ -72,42 +73,46 @@ def examples() -> list[dict]:
 
 @app.post("/api/check")
 async def create_check(body: CheckRequest, request: Request) -> dict:
+    lang = norm_lang(body.lang)
+    LANG.set(lang)
     text = body.text.strip()
     if len(text) > settings.max_text_chars:
-        raise HTTPException(413, f"Слишком длинный текст: максимум {settings.max_text_chars} символов.")
-    cached = store._cache_path(store.text_key(text)).exists()
+        raise HTTPException(413, tr("api.too_long", n=settings.max_text_chars))
+    cached = store._cache_path(store.text_key(text, "", lang)).exists()
     if not cached:
         if not settings.llm_api_key:
-            raise HTTPException(503, "Сервер не настроен: не задан LLM_API_KEY. Попробуйте один из примеров.")
+            raise HTTPException(503, tr("api.no_key"))
         if _rate_limited(_client_ip(request)):
-            raise HTTPException(429, "Слишком много проверок подряд. Подождите немного.")
-    job = store.start(text)
+            raise HTTPException(429, tr("api.rate"))
+    job = store.start(text, lang=lang)
     return {"id": job.id, "cached": job.cached}
 
 
 @app.post("/api/check-file")
-async def create_file_check(request: Request, file: UploadFile = File(...)) -> dict:
-    """«Проверить работу перед сдачей»: the whole paper, its reference list first."""
+async def create_file_check(request: Request, file: UploadFile = File(...), lang: str = Form("ru")) -> dict:
+    """«Документ»: the whole paper, its reference list first."""
+    lang = norm_lang(lang)
+    LANG.set(lang)
     data = await file.read(MAX_BYTES + 1)
-    name = Path(file.filename or "работа").name
+    name = Path(file.filename or "document").name
     try:
         text = extract_text(name, data)
     except DocumentError as e:
         raise HTTPException(422, str(e)) from e
-    cached = store._cache_path(store.text_key(text, "document")).exists()
+    cached = store._cache_path(store.text_key(text, "document", lang)).exists()
     if not cached:
         if not settings.llm_api_key:
-            raise HTTPException(503, "Сервер не настроен: не задан LLM_API_KEY. Попробуйте пример курсовой.")
+            raise HTTPException(503, tr("api.no_key"))
         if _rate_limited(_client_ip(request)):
-            raise HTTPException(429, "Слишком много проверок подряд. Подождите немного.")
-    job = store.start(text, filename=name)
+            raise HTTPException(429, tr("api.rate"))
+    job = store.start(text, filename=name, lang=lang)
     return {"id": job.id, "cached": job.cached, "filename": name}
 
 
 @app.get("/api/sample-docx", include_in_schema=False)
 def sample_docx():
     if not SAMPLE_DOCX.exists():
-        raise HTTPException(404, "Пример не найден")
+        raise HTTPException(404, tr("api.sample_missing"))
     return FileResponse(SAMPLE_DOCX, filename="sample_coursework.docx",
                         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
@@ -127,7 +132,7 @@ async def events(jid: str) -> StreamingResponse:
 def report(rid: str) -> dict:
     rep = store.load_report(rid)
     if rep is None:
-        raise HTTPException(404, "Отчёт не найден")
+        raise HTTPException(404, tr("api.report_missing"))
     return rep
 
 

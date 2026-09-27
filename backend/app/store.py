@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator, Optional
 
+from . import i18n
 from .config import settings
 from .pipeline import PIPELINE_VERSION, run
 
@@ -20,7 +21,8 @@ class Job:
     events: list[dict] = field(default_factory=list)
     done: bool = False
     cached: bool = False
-    filename: Optional[str] = None  # set for «Работа целиком» (uploaded paper)
+    filename: Optional[str] = None  # set for «Документ» (uploaded paper)
+    lang: str = "ru"
     created: float = field(default_factory=time.time)
     cond: asyncio.Condition = field(default_factory=asyncio.Condition)
 
@@ -28,13 +30,14 @@ class Job:
 _jobs: dict[str, Job] = {}
 
 
-def text_key(text: str, mode: str = "") -> str:
-    prefix = f"{PIPELINE_VERSION}\n" + (f"{mode}\n" if mode else "")
+def text_key(text: str, mode: str = "", lang: str = "ru") -> str:
+    # Russian keeps the historic key, so committed seed_cache runs stay valid
+    prefix = f"{PIPELINE_VERSION}\n" + (f"{mode}\n" if mode else "") + (f"lang={lang}\n" if lang != "ru" else "")
     return hashlib.sha256(f"{prefix}{text.strip()}".encode()).hexdigest()[:24]
 
 
 def _key(job: "Job") -> str:
-    return text_key(job.text, "document" if job.filename else "")
+    return text_key(job.text, "document" if job.filename else "", job.lang)
 
 
 def _cache_path(key: str):
@@ -52,9 +55,9 @@ def _transient(events: list[dict]) -> bool:
             return True
         chk = e.get("check") or {}
         items = [it.get("check") or {} for it in e.get("items", [])] if e["type"] == "bibliography" else [chk]
-        if any(c.get("status") == "unreachable" and "повторите" in c.get("detail", "") for c in items):
+        if any(c.get("retry") for c in items):
             return True
-        if e["type"] == "claim" and e["result"]["reason"].startswith(("Сбой модели", "Внутренняя ошибка")):
+        if e["type"] == "claim" and e["result"].get("error"):
             return True
     return False
 
@@ -76,9 +79,9 @@ def load_report(rid: str) -> Optional[dict]:
     return None
 
 
-def start(text: str, filename: Optional[str] = None) -> Job:
+def start(text: str, filename: Optional[str] = None, lang: str = "ru") -> Job:
     jid = secrets.token_urlsafe(6)
-    job = Job(id=jid, text=text, filename=filename)
+    job = Job(id=jid, text=text, filename=filename, lang=lang)
     _jobs[jid] = job
     cached = _cache_path(_key(job))
     if cached.exists():
@@ -92,6 +95,7 @@ def start(text: str, filename: Optional[str] = None) -> Job:
 
 
 async def _run(job: Job) -> None:
+    i18n.LANG.set(job.lang)  # inherited by every task the check creates
     try:
         if job.filename:
             from .bibliography import run_document

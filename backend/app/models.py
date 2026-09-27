@@ -46,6 +46,7 @@ class SourceCheck(BaseModel):
     matched: Optional[MatchedRecord] = None
     text_scope: Literal["full", "abstract", "none"] = "none"
     differences: list[str] = Field(default_factory=list)
+    retry: bool = False  # a temporary failure (database busy): shown, but not cached
 
 
 class Replacement(BaseModel):
@@ -109,6 +110,7 @@ class ClaimResult(BaseModel):
     numbers: Optional[NumberCheck] = None
     notes: list[str] = Field(default_factory=list)
     search: Optional[SearchInfo] = None
+    error: bool = False  # the LLM or the pipeline failed: shown, but not cached
 
 
 class Summary(BaseModel):
@@ -123,3 +125,4 @@ class Summary(BaseModel):
 
 class CheckRequest(BaseModel):
     text: str = Field(min_length=20)
+    lang: str = "ru"

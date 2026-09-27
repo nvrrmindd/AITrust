@@ -7,7 +7,7 @@ import logging
 import time
 from typing import AsyncIterator
 
-from . import search
+from . import i18n, search
 from .extract import extract
 from .judge import judge_attack, judge_cited
 from .models import Citation, Claim, ClaimResult, SourceCheck, Summary
@@ -45,29 +45,15 @@ def summarize(claims: list[Claim], checks: list[SourceCheck], results: list[Clai
     by_id = {c.id: c for c in claims}
     danger = sum(1 for r in results if r.verdict != "supported" and by_id[r.claim_id].certainty == "assertive")
 
-    parts = []
-    if checks and missing:
-        parts.append(f"{missing} из {len(checks)} {_plural(len(checks), 'источника', 'источников', 'источников')} не существуют")
-    if mism:
-        parts.append(f"{mism} {_plural(mism, 'источник искажён', 'источника искажены', 'источников искажены')}")
-    bad = counts["contradicted"]
-    if bad:
-        parts.append(f"{bad} {_plural(bad, 'утверждение противоречит', 'утверждения противоречат', 'утверждений противоречат')} источникам")
-    if not parts:
-        ok = counts["supported"]
-        headline = (f"Подтверждено {ok} из {len(results)} утверждений" if results else "Проверяемых утверждений не найдено")
-        if counts["unverifiable"] or counts["not_in_source"]:
-            headline += f", {counts['unverifiable'] + counts['not_in_source']} — без доказательств"
-    else:
-        headline = "; ".join(parts)
-        headline = headline[0].upper() + headline[1:]
-    return Summary(headline=headline + ".", counts=counts, sources_total=len(checks), sources_missing=missing,
+    weak = counts["unverifiable"] + counts["not_in_source"]
+    headline = i18n.headline(len(checks), missing, mism, counts["contradicted"], counts["supported"], len(results), weak)
+    return Summary(headline=headline, counts=counts, sources_total=len(checks), sources_missing=missing,
                    sources_mismatch=mism, danger_zone=danger, duration_ms=int((time.time() - started) * 1000))
 
 
 async def run(text: str) -> AsyncIterator[dict]:
     started = time.time()
-    yield {"type": "stage", "stage": "extract", "message": "Разбираю ответ на утверждения и источники…"}
+    yield {"type": "stage", "stage": "extract", "message": i18n.tr("stage.extract")}
     claims, citations = await extract(text)
     yield {"type": "extracted", "claims": [c.model_dump() for c in claims], "citations": [c.model_dump() for c in citations]}
     if not claims:
@@ -112,12 +98,12 @@ async def run(text: str) -> AsyncIterator[dict]:
         except Exception as e:  # noqa: BLE001
             log.exception("claim %s failed", cl.id)
             res = ClaimResult(claim_id=cl.id, verdict="unverifiable", mode="cited" if cl.citation_ids else "attack",
-                              reason=f"Внутренняя ошибка проверки: {type(e).__name__}.")
+                              reason=i18n.tr("internal_error", err=type(e).__name__), error=True)
         results.append(res)
         await queue.put({"type": "claim", "result": res.model_dump()})
         await queue.put(None)
 
-    yield {"type": "stage", "stage": "verify", "message": "Проверяю источники и ищу опровержения…"}
+    yield {"type": "stage", "stage": "verify", "message": i18n.tr("stage.verify")}
     tasks = [asyncio.create_task(do_source(c)) for c in citations] + [asyncio.create_task(do_claim(c)) for c in claims]
     pending = len(tasks)
     while pending:  # each task emits its events, then None

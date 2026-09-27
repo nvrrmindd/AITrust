@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from . import llm
 from .models import Citation, Claim, ClaimResult, Evidence, MatchedRecord, NumberCheck, SearchInfo, SourceCheck
 from .prompts import JUDGE_ATTACK_SYSTEM, JUDGE_CITED_SYSTEM
+from .i18n import LLM_LANGUAGE, current, tr
 from .search import TIER_RU, Hit
 from .search import provider as search_provider
 from .sources import SourceText
@@ -18,7 +19,6 @@ from .textutil import chunk, number_mismatch, quote_in_text, rank_passages
 
 log = logging.getLogger("pruf.judge")
 
-QUOTE_DROPPED = "Модель-судья не смогла привести дословную цитату из источника — её вердикт отброшен."
 
 
 def _label(cit: Citation, sc: SourceCheck) -> str:
@@ -37,7 +37,7 @@ async def judge_cited(claim: Claim, cits: list[Citation], checks: dict[str, Sour
     for cit in cits:
         per_source.append(await _judge_one_source(claim, cit, checks[cit.id], texts.get(cit.id, SourceText("", "none"))))
     if not per_source:
-        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="cited", reason="Источник не распознан.")
+        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="cited", reason=tr("j.unrecognized"))
     # if ANY source supports with a verified quote, the claim is supported; otherwise report the worst problem
     order = ["supported", "contradicted", "source_missing", "not_in_source", "unverifiable"]
     for v in order:
@@ -64,11 +64,11 @@ async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: So
 
     if sc.status == "not_found":
         return ClaimResult(claim_id=claim.id, verdict="source_missing", mode="cited",
-                           reason=f"Утверждение опирается на источник, которого не существует. {sc.detail}")
+                           reason=tr("j.source_missing", detail=sc.detail))
     if sc.status in ("unreachable", "unchecked") or st.scope == "none" or len(st.text) < 80:
-        why = sc.detail if sc.status in ("unreachable", "unchecked") else "Текст источника недоступен."
+        why = sc.detail if sc.status in ("unreachable", "unchecked") else tr("j.no_text")
         return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="cited",
-                           reason=f"Не удалось прочитать источник, поэтому честно не выносим вердикт. {why}")
+                           reason=tr("j.cannot_read", why=why))
 
     passages = chunk(st.text)
     top = rank_passages(claim.text, passages, k=10)
@@ -79,9 +79,9 @@ async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: So
         f"{' (доступна только аннотация)' if st.scope == 'abstract' else ''}\n\nФрагменты:\n{block}"
     )
     try:
-        out = await llm.complete_json(JUDGE_CITED_SYSTEM, user, max_tokens=600)
+        out = await llm.complete_json(_in_lang(JUDGE_CITED_SYSTEM), user, max_tokens=600)
     except llm.LLMError as e:
-        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="cited", reason=f"Сбой модели-судьи: {e}")
+        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="cited", reason=tr("j.llm_fail", err=e), error=True)
 
     verdict = str(out.get("verdict", "not_mentioned"))
     quote = str(out.get("quote") or "").strip()
@@ -92,7 +92,7 @@ async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: So
     quote_ok = bool(quote) and quote_in_text(quote, st.text)
     if quote and not quote_ok:
         log.warning("claim %s: judge quote not found in source, dropped: %r", claim.id, quote[:200])
-        notes.append(QUOTE_DROPPED)
+        notes.append(tr("j.quote_dropped"))
     if quote_ok:
         stance = {"supports": "supports", "contradicts": "contradicts", "partially": "contradicts"}.get(verdict, "neutral")
         evidence.append(Evidence(source_label=label, url=url, citation_id=cit.id, quote=quote, quote_verified=True, stance=stance))  # type: ignore[arg-type]
@@ -104,31 +104,30 @@ async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: So
 
     if verdict in ("supports", "partially", "contradicts") and not quote_ok:
         final = "unverifiable"
-        reason = "Модель нашла что-то похожее, но не смогла подтвердить это дословной цитатой. Вердикт не выносим."
+        reason = tr("j.no_quote")
     elif verdict == "supports":
         if mismatch:
             final = "contradicted"
-            notes.append("Цифры в утверждении не совпадают с цифрами в источнике.")
-            reason = (f"Источник говорит о том же, но с другими числами: в ответе ИИ — {', '.join(cn)}, "
-                      f"в источнике — {', '.join(sn[:4])}.")
+            notes.append(tr("j.numbers_note"))
+            reason = tr("j.numbers_reason", a=", ".join(cn), b=", ".join(sn[:4]))
         else:
             final = "supported"
     elif verdict in ("contradicts", "partially"):
         final = "contradicted"
         if verdict == "partially":
-            notes.append("Источник говорит о более узком или осторожном утверждении, чем ответ ИИ.")
+            notes.append(tr("j.narrower"))
     else:  # not_mentioned
         if st.scope == "abstract":
             final = "unverifiable"
-            reason = "В аннотации статьи этого нет, а полный текст недоступен — подтвердить или опровергнуть нельзя."
+            reason = tr("j.abstract_missing")
         else:
             final = "not_in_source"
-            reason = reason or "Источник существует и прочитан, но этого утверждения в нём нет."
+            reason = reason or tr("j.not_in_source")
 
     if sc.status == "mismatch":
-        notes.append("Данные источника в ответе ИИ искажены: " + ("; ".join(sc.differences) if sc.differences else sc.detail))
+        notes.append(tr("j.distorted_note", x="; ".join(sc.differences) if sc.differences else sc.detail))
     if st.scope == "abstract":
-        notes.append("Проверено по аннотации статьи (полный текст недоступен).")
+        notes.append(tr("j.abstract_note"))
 
     return ClaimResult(claim_id=claim.id, verdict=final, mode="cited", reason=reason, evidence=evidence, numbers=numbers, notes=notes)  # type: ignore[arg-type]
 
@@ -140,8 +139,7 @@ async def judge_attack(claim: Claim, hits: list[Hit], queries: list[str] | None 
                       domains=list(dict.fromkeys(h.domain for h in hits))[:8])
     if not hits:
         return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="attack", search=info,
-                           reason=f"ИИ не указал источник, а поиск ({_provider_ru(info.provider)}) не нашёл ни одной страницы по теме. "
-                                  "Подтверждений нет — используйте это утверждение с осторожностью.")
+                           reason=tr("j.attack_nothing", prov=_provider_ru(info.provider)))
     passages: list[tuple[Hit, str]] = []
     for h in hits:
         ch = chunk(h.snippet) or [h.snippet[:900]]
@@ -154,9 +152,9 @@ async def judge_attack(claim: Claim, hits: list[Hit], queries: list[str] | None 
         for n, (h, p) in enumerate(chosen)
     )
     try:
-        out = await llm.complete_json(JUDGE_ATTACK_SYSTEM, f"Утверждение: {claim.text}\n\nФрагменты:\n{block}", max_tokens=900)
+        out = await llm.complete_json(_in_lang(JUDGE_ATTACK_SYSTEM), f"Утверждение: {claim.text}\n\nФрагменты:\n{block}", max_tokens=900)
     except llm.LLMError as e:
-        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="attack", reason=f"Сбой модели-судьи: {e}", search=info)
+        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="attack", reason=tr("j.llm_fail", err=e), search=info, error=True)
 
     evidence: list[Evidence] = []
     notes: list[str] = []
@@ -180,7 +178,7 @@ async def judge_attack(claim: Claim, hits: list[Hit], queries: list[str] | None 
         stance = "contradicts" if ev.get("stance") == "contradicts" else "supports"
         evidence.append(Evidence(source_label=h.title or h.domain, url=h.url, quote=q, quote_verified=True, stance=stance, tier=h.tier))  # type: ignore[arg-type]
     if dropped:
-        notes.append(f"{dropped} цитат(ы) модели не нашлись в источниках дословно и были отброшены.")
+        notes.append(tr("j.dropped", n=dropped))
 
     verdict = str(out.get("verdict", "insufficient"))
     reason = str(out.get("reason") or "").strip()
@@ -194,22 +192,22 @@ async def judge_attack(claim: Claim, hits: list[Hit], queries: list[str] | None 
     if verdict == "contradicted" and contra:
         final = "contradicted"
         if not strong(contra):
-            notes.append("Опровержение найдено в одном источнике невысокой надёжности — стоит перепроверить.")
+            notes.append(tr("j.weak_refute"))
     elif verdict == "supported" and support and mismatch:
         final = "contradicted"
-        notes.append("Найденные источники приводят другие числа.")
+        notes.append(tr("j.other_numbers"))
     elif verdict == "supported" and support and strong(support):
         final = "supported"
     elif verdict == "supported" and support:
         final = "unverifiable"
-        reason = "Нашли подтверждение только на одном сайте невысокой надёжности. Этого мало, чтобы считать факт доказанным. " + reason
+        reason = tr("j.weak_support") + reason
     else:
         final = "unverifiable"
         if verdict != "insufficient":
-            reason = "Модель что-то нашла, но не подтвердила это дословными цитатами. " + reason
+            reason = tr("j.no_verified") + reason
         elif not reason:
-            reason = "На найденных страницах нет ни подтверждения, ни опровержения."
-    notes.insert(0, f"ИИ не дал источник — искали и подтверждения, и опровержения ({_provider_ru(info.provider)}, прочитано страниц: {info.pages}).")
+            reason = tr("j.neither")
+    notes.insert(0, tr("j.attack_note", prov=_provider_ru(info.provider), n=info.pages))
     return ClaimResult(claim_id=claim.id, verdict=final, mode="attack", reason=reason, evidence=evidence,  # type: ignore[arg-type]
                        numbers=numbers, notes=notes, search=info)
 
@@ -219,4 +217,9 @@ def _dom(url: str) -> str:
 
 
 def _provider_ru(p: str) -> str:
-    return "веб-поиск" if p == "tavily" else "только Википедия"
+    return tr("prov.web") if p == "tavily" else tr("prov.wiki")
+
+
+def _in_lang(system: str) -> str:
+    """The judge prompts ask for the reason "по-русски"; switch that to the user's language."""
+    return system.replace("по-русски", LLM_LANGUAGE[current()])

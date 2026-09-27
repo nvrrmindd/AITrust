@@ -178,8 +178,8 @@ def test_check_file_endpoint_errors(monkeypatch):
 def test_runs_with_temporary_failures_are_not_cached():
     from app.store import _transient
     ok = [{"type": "source", "check": {"status": "exists", "detail": "ok"}}]
-    busy = [{"type": "bibliography", "items": [{"check": {"status": "unreachable", "detail": "… повторите проверку через минуту."}}]}]
-    quota = [{"type": "claim", "result": {"reason": "Сбой модели-судьи: 429"}}]
+    busy = [{"type": "bibliography", "items": [{"check": {"status": "unreachable", "detail": "busy", "retry": True}}]}]
+    quota = [{"type": "claim", "result": {"reason": "429", "error": True}}]
     assert not _transient(ok) and _transient(busy) and _transient(quota)
 
 

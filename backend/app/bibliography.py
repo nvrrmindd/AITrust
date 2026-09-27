@@ -18,6 +18,7 @@ from typing import AsyncIterator, Optional
 
 from . import llm
 from .config import settings
+from .i18n import tr
 from .extract import _marker_numbers, _norm_citation
 from .judge import judge_cited
 from .models import Citation, Claim, ClaimResult, SourceCheck
@@ -232,10 +233,6 @@ def cited_claims(body: str, cits: list[Citation], limit: int = MAX_CLAIMS) -> li
 
 # ---------------------------------------------------------------- 2b. documents without a reference list
 
-SELECTED_NOTICE = ("В документе нет списка литературы, поэтому проверяем утверждения о фактах и числах из всего текста. "
-                   "Титульный лист, личные данные, даты и обязанности не проверяем: их нельзя сверить с открытыми источниками.")
-NOTHING_CHECKABLE = ("В документе не нашлось утверждений, которые можно сверить с открытыми источниками: только личные данные, "
-                     "даты, обязанности и описание работы. Такие сведения Trustable? не проверяет.")
 _FACT_CUES = re.compile(
     r"по данным|согласно|исследован|статистик|составля|составил|насчитыва|достиг|увеличил|сократил|вырос|снизил|"
     r"крупнейш|млн|млрд|тыс\.|процент|%|\bв \d{4} год|закон|кодекс|постановлени|указ\b|according|percent|million|billion",
@@ -307,11 +304,11 @@ async def run_document(text: str, filename: str) -> AsyncIterator[dict]:
         # check them like any text, and map the highlights back onto the full document
         part = text if len(text) <= settings.max_text_chars and not _looks_like_report(text) else checkable_text(text, settings.max_text_chars)
         if not part.strip():
-            yield {"type": "notice", "message": NOTHING_CHECKABLE}
+            yield {"type": "notice", "message": tr("bib.nothing")}
             yield {"type": "done", "summary": summarize([], [], [], started).model_dump()}
             return
         if part is not text:
-            yield {"type": "notice", "message": SELECTED_NOTICE}
+            yield {"type": "notice", "message": tr("bib.selected")}
         async for ev in run(part):
             if ev["type"] == "extracted" and part is not text:
                 for c in ev["claims"]:
@@ -319,16 +316,16 @@ async def run_document(text: str, filename: str) -> AsyncIterator[dict]:
             yield ev
         return
     body, bib = found
-    yield {"type": "stage", "stage": "extract", "message": "Разбираю список литературы…"}
+    yield {"type": "stage", "stage": "extract", "message": tr("stage.bib")}
     refs = split_references(bib)
     if not refs:
-        yield {"type": "error", "message": "Заголовок списка литературы есть, но ссылок под ним не нашлось."}
+        yield {"type": "error", "message": tr("bib.no_refs")}
         return
     citations = await parse_all(refs)
     yield {"type": "bibliography", "items": [_item(c, None) for c in citations]}
     claims = cited_claims(body, citations)
     yield {"type": "extracted", "claims": [c.model_dump() for c in claims], "citations": [c.model_dump() for c in citations]}
-    yield {"type": "stage", "stage": "verify", "message": f"Проверяю {len(citations)} источников и {len(claims)} утверждений…"}
+    yield {"type": "stage", "stage": "verify", "message": tr("stage.bib_verify", a=len(citations), b=len(claims))}
 
     queue: asyncio.Queue[dict] = asyncio.Queue()
     checks: dict[str, SourceCheck] = {}
@@ -363,7 +360,7 @@ async def run_document(text: str, filename: str) -> AsyncIterator[dict]:
             res = await judge_cited(cl, [by_id[i] for i in cl.citation_ids], checks, texts)
         except Exception as e:  # noqa: BLE001
             log.exception("claim %s failed", cl.id)
-            res = ClaimResult(claim_id=cl.id, verdict="unverifiable", mode="cited", reason=f"Внутренняя ошибка проверки: {type(e).__name__}.")
+            res = ClaimResult(claim_id=cl.id, verdict="unverifiable", mode="cited", reason=tr("internal_error", err=type(e).__name__), error=True)
         results.append(res)
         await queue.put({"type": "claim", "result": res.model_dump()})
 

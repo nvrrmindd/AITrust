@@ -55,7 +55,10 @@ export type PipelineEvent =
   | { type: 'cached' }
   | { type: 'error'; message: string };
 
-export interface Example { id: string; title: string; subtitle: string; text: string; }
+export interface Example {
+  id: string; title: string; subtitle: string; text: string;
+  title_en?: string; subtitle_en?: string; title_kk?: string; subtitle_kk?: string;
+}
 
 export const VERDICT: Record<Verdict, { label: string; short: string; tone: string }> = {
   source_missing: { label: 'Источник не существует', short: 'Нет источника', tone: 'red' },
