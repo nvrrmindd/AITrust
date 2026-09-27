@@ -595,3 +595,108 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
 .hero { grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); }
 .hero-copy { z-index: 2; }
 @media (max-width: 960px) { .hero { grid-template-columns: 1fr; } }
+
+/* ================================================================ staircase, charts, personas */
+.stairs { list-style: none; padding: 0; margin: 36px 0 0; display: grid; gap: 26px; }
+.stair { --step: 56px; position: relative; margin-left: calc(var(--i) * var(--step)); display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 16px; max-width: 620px; }
+.stair-node {
+  position: relative; z-index: 1; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center;
+  font: 700 18px/1 var(--sans); color: #fff; background: var(--plum); box-shadow: 0 10px 22px -12px rgba(42, 18, 69, .7);
+}
+.stair:not(:last-child)::before {           /* riser: down from this node */
+  content: ''; position: absolute; left: 23px; top: 48px; bottom: -13px; border-left: 2px dashed var(--lil-line-strong);
+}
+.stair:not(:last-child)::after {            /* tread: right to the next node */
+  content: ''; position: absolute; left: 23px; bottom: -13px; width: var(--step); border-top: 2px dashed var(--lil-line-strong);
+}
+.stair + .stair .stair-node::before {       /* short riser up into the next node */
+  content: ''; position: absolute; left: 23px; top: -13px; height: 13px; border-left: 2px dashed var(--lil-line-strong);
+}
+.stair-body {
+  background: linear-gradient(160deg, #ffffff 0%, var(--lil-bg) 100%); border: 1px solid var(--lil-line); border-radius: var(--radius-m);
+  padding: 14px 18px; transition: transform .25s cubic-bezier(.2, .8, .2, 1), box-shadow .25s;
+}
+.stair:hover .stair-body { transform: translateX(6px); box-shadow: var(--lil-shadow); }
+.stair-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.stair-body h3 { font: 600 18px/1.3 var(--serif); }
+.stair-body p { margin: 6px 0 0; color: var(--ink-2); font-size: 15px; }
+.stair-out { margin-top: 10px !important; }
+.who { font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; }
+.who-ai { background: #efe6ff; color: #5b36c9; border-color: #dccbff; }
+.who-code { background: var(--plum); color: #fff; }
+.who-registry { background: #e7f4eb; color: var(--green-fg); border-color: #cfe9d8; }
+.who-web { background: #e8f1fd; color: #1f5fb4; border-color: #cfe0f7; }
+.who-you { background: #fff; color: var(--ink); border-color: var(--line-strong); }
+
+.numbers-sec { position: relative; margin-top: 110px; }
+.numbers-sec > :not(.chrome) { position: relative; z-index: 1; }
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 24px; }
+.chart { margin: 0; padding: 22px 24px; border: 1px solid var(--lil-line); border-radius: 18px; background: #fff; }
+.chart figcaption h3 { font: 600 19px/1.3 var(--serif); }
+.chart figcaption p { margin: 4px 0 18px; color: var(--ink-3); font-size: 14px; }
+.chart-note { margin: 16px 0 0; color: var(--ink-2); font-size: 14px; }
+
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 8px); translate: -50% 0; z-index: 3;
+  background: var(--plum); color: #fff; font: 600 12.5px/1 var(--sans); padding: 7px 9px; border-radius: 8px; white-space: nowrap;
+  pointer-events: none;
+}
+
+.hbars { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.hbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label val" "track track"; gap: 6px 12px; cursor: default; }
+.hbar-label { grid-area: label; font-size: 14.5px; color: var(--ink); }
+.hbar-val { grid-area: val; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.hbar-track { grid-area: track; height: 10px; border-radius: 4px; background: #f1edf9; overflow: hidden; }
+.hbar-fill { display: block; height: 100%; border-radius: 0 4px 4px 0; background: #9b84e8; transform-origin: left; animation: grow 1s cubic-bezier(.2, .8, .2, 1) both; }
+.hbar.is-key .hbar-fill { background: var(--plum); }
+.hbar.is-key .hbar-label, .hbar.is-key .hbar-val { font-weight: 700; color: var(--plum); }
+.hbar:hover .hbar-fill { filter: brightness(1.08); }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.legend { list-style: none; padding: 0; margin: -6px 0 14px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13.5px; color: var(--ink-2); }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.lg { width: 12px; height: 12px; border-radius: 3px; }
+.lg-ok, .seg-ok { background: var(--green-ln); }
+.lg-skip, .seg-skip { background: #b8b1a6; }
+.lg-bad, .seg-bad { background: var(--red-ln); }
+.sbars { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; }
+.sbar { display: grid; gap: 6px; }
+.sbar-label { font-size: 14.5px; color: var(--ink); }
+.sbar-label b { color: var(--ink-3); font-weight: 500; margin-left: 4px; }
+.sbar-track { display: flex; gap: 2px; height: 26px; }
+.seg {
+  flex-basis: 0; min-width: 26px; border-radius: 4px; display: grid; place-items: center;
+  font: 700 13px/1 var(--sans); color: #fff; font-variant-numeric: tabular-nums;
+  transform-origin: left; animation: grow .9s cubic-bezier(.2, .8, .2, 1) both; cursor: default;
+}
+.seg-skip { color: var(--ink); }
+.seg:hover { filter: brightness(1.08); }
+.chart-table { margin-top: 12px; font-size: 13.5px; color: var(--ink-2); }
+.chart-table summary { cursor: pointer; font-weight: 500; }
+.chart-table table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.chart-table th, .chart-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+
+.personas { list-style: none; padding: 0; margin: 20px 0 0; border-top: 1px solid var(--lil-line); }
+.persona {
+  display: grid; grid-template-columns: 310px minmax(0, 1fr) auto; gap: 28px; align-items: center;
+  padding: 22px 12px; border-bottom: 1px solid var(--lil-line); transition: background .25s, padding .25s;
+}
+.persona:hover { background: linear-gradient(90deg, var(--lil-bg) 0%, rgba(246, 241, 255, 0) 100%); padding-left: 20px; }
+.p-who { font: 600 clamp(22px, 2.6vw, 30px)/1.1 var(--serif); color: var(--plum); }
+.persona p { margin: 0; color: var(--ink-2); }
+.p-go { background: none; border: 0; padding: 8px 0; font-weight: 600; color: var(--accent); white-space: nowrap; }
+.p-go:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+@supports (animation-timeline: view()) {
+  .stair, .chart, .persona { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% entry 60%; }
+  .hbar-fill, .seg { animation: grow linear both; animation-timeline: view(); animation-range: entry 10% cover 35%; }
+}
+@media (max-width: 960px) {
+  .charts { grid-template-columns: 1fr; }
+  .stair { --step: 28px; }
+}
+@media (max-width: 720px) {
+  .stair { --step: 12px; }
+  .persona { grid-template-columns: 1fr; gap: 8px; }
+}

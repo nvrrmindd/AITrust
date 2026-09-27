@@ -155,82 +155,101 @@
     <section id="who-checks" class="who-checks band">
       <svg class="chrome c-band-splat" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
       <svg class="chrome c-band-drop" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-drop" fill="url(#chrome)"/><use href="#p-drop" fill="url(#irid)"/></g></svg>
-      <h2 class="section-title">Кто на самом деле проверяет</h2>
-      <p class="section-sub">Нейросеть у нас не выносит приговор. Она только находит в источнике нужное место. Решают реестры и код.</p>
-      <div class="checker-grid">
-        <div class="checker">
-          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5 1 0 2-.1 2.8-.2"/><circle cx="18.5" cy="18.5" r="3.5" class="i-fill"/><path d="M16.9 18.5l1.1 1.1 2-2.2" class="i-ok"/></svg></span>
-          <h3>Мировые реестры публикаций</h3>
-          <p>doi.org, Crossref, OpenAlex — сотни миллионов научных работ. Нет в реестрах — значит, ссылку выдумали.</p>
-        </div>
-        <div class="checker">
-          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 8.5h18"/><circle cx="6" cy="6.3" r=".6" class="i-dot"/><circle cx="8.2" cy="6.3" r=".6" class="i-dot"/><path d="M7 12.5h10M7 16h6"/><rect x="6.4" y="11.2" width="7" height="2.6" rx="1" class="i-hl"/></svg></span>
-          <h3>Сам источник</h3>
-          <p>Открываем страницу, PDF или аннотацию статьи и читаем, что там написано. Закрыт пейволом — честно пишем «нет доступа».</p>
-        </div>
-        <div class="checker">
-          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5c0-1.4 1.1-2.5 2.5-2.5H8v4.5H4.5"/><path d="M4.5 9.5c0 2.6-.6 4.2-2 5"/><path d="M12 7.5c0-1.4 1.1-2.5 2.5-2.5H16v4.5h-3.5"/><path d="M12.5 9.5c0 2.6-.6 4.2-2 5"/><path d="M14.5 17l2.3 2.3 4.7-5" class="i-ok"/></svg></span>
-          <h3>Сверка цитаты кодом</h3>
-          <p>Цитата, которую принесла нейросеть, должна дословно найтись в источнике. Не нашлась — вердикт выбрасывается.</p>
-        </div>
-        <div class="checker">
-          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="16" rx="2"/><rect x="13" y="4" width="8" height="16" rx="2"/><path d="M5.5 9h3M5.5 12h3" /><path d="M15.5 9h3M15.5 12h3"/><path d="M5.5 16h3" class="i-bad"/><path d="M15.5 16h3" class="i-ok"/></svg></span>
-          <h3>Сравнение чисел</h3>
-          <p>Числа из текста и из источника сравниваются автоматически. Подменённую цифру видно сразу.</p>
-        </div>
-        <div class="checker">
-          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.3 15.3L21 21"/><path d="M8 8.5l5 4M13 8.5l-5 4" class="i-bad"/></svg></span>
-          <h3>Поиск опровержений</h3>
-          <p>Если источник не указан, ищем в интернете не только подтверждения, но и опровержения. Надёжные сайты весят больше.</p>
-        </div>
-        <div class="checker">
-          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h8.5L19 7.5V21H6z"/><path d="M14.5 3v4.5H19"/><rect x="8.5" y="11" width="3" height="3" rx=".5"/><rect x="13.5" y="11" width="3" height="3" rx=".5"/><rect x="8.5" y="16" width="3" height="3" rx=".5"/><path d="M13.5 16h1.5v1.5M16.5 16v3h-3" class="i-hl-stroke"/></svg></span>
-          <h3>Отчёт, который можно перепроверить</h3>
-          <p>PDF с датой и QR-кодом: по нему любой откроет исходную проверку со всеми цитатами и ссылками.</p>
-        </div>
-      </div>
+      <h2 class="section-title">Путь одного утверждения</h2>
+      <p class="section-sub">Каждое утверждение поднимается по этой лестнице. Нейросеть появляется на ней дважды — и оба раза только приносит материал. Решают реестры и код.</p>
+      <ol class="stairs">
+        @for (st of stairs; track $index) {
+          <li class="stair" [style.--i]="$index">
+            <span class="stair-node">{{ $index + 1 }}</span>
+            <div class="stair-body">
+              <div class="stair-head">
+                <h3>{{ st.title }}</h3>
+                <span class="who who-{{ st.who }}">{{ WHO[st.who] }}</span>
+              </div>
+              <p>{{ st.text }}</p>
+              @if (st.out) { <p class="stair-out"><span class="pill small tone-{{ st.tone }}">{{ st.out }}</span></p> }
+            </div>
+          </li>
+        }
+      </ol>
     </section>
 
-    <section class="steps">
+    <section class="numbers-sec">
       <svg class="chrome c-steps-dot1" viewBox="0 0 140 140" aria-hidden="true"><g filter="url(#gloss)"><circle cx="70" cy="70" r="36" fill="url(#chrome)"/></g></svg>
       <svg class="chrome c-steps-dot2" viewBox="0 0 140 140" aria-hidden="true"><g filter="url(#gloss)"><circle cx="70" cy="70" r="36" fill="url(#chrome)"/></g></svg>
-      <h2 class="section-title">Как это работает</h2>
-      <ol class="step-list">
-        <li class="step">
-          <svg viewBox="0 0 120 80" aria-hidden="true"><rect x="20" y="8" width="80" height="64" rx="6"/><path d="M32 24h56M32 36h40M32 48h52M32 60h28"/><rect x="31" y="32" width="42" height="8" rx="2" class="fill-marker" stroke="none"/><path d="M32 36h40"/></svg>
-          <h3>1. Находим утверждения</h3>
-          <p>Факты, числа, даты и ссылки на источники — отдельно каждое.</p>
-        </li>
-        <li class="step">
-          <svg viewBox="0 0 120 80" aria-hidden="true"><rect x="14" y="14" width="44" height="56" rx="4"/><path d="M22 28h28M22 38h28M22 48h18"/><circle cx="78" cy="38" r="16"/><path d="M89 50l12 12"/><path d="M71 38l5 5 9-10" class="stroke-green"/></svg>
-          <h3>2. Открываем источники</h3>
-          <p>Проверяем, существует ли каждый, и читаем, что в нём написано.</p>
-        </li>
-        <li class="step">
-          <svg viewBox="0 0 120 80" aria-hidden="true"><path d="M16 14h88a4 4 0 0 1 4 4v36a4 4 0 0 1-4 4H48l-14 12V58H16a4 4 0 0 1-4-4V18a4 4 0 0 1 4-4z"/><path d="M26 28h46M26 40h58"/><rect x="54" y="35" width="18" height="9" rx="2" class="fill-marker" stroke="none"/><path d="M26 40h58"/></svg>
-          <h3>3. Показываем доказательство</h3>
-          <p>Вердикт, объяснение и дословная цитата со ссылкой — проверить нас можно за пять секунд.</p>
-        </li>
-      </ol>
+      <h2 class="section-title">Проблема и результат — в цифрах</h2>
+      <div class="charts">
+        <figure class="chart">
+          <figcaption>
+            <h3>Опрос студентов</h3>
+            <p>Опрос идёт; сейчас {{ survey.n }} ответов</p>
+          </figcaption>
+          <ul class="hbars" role="list">
+            @for (b of survey.rows; track b.label) {
+              <li class="hbar" [class.is-key]="b.key" [attr.data-tip]="b.value + ' из ' + survey.n">
+                <span class="hbar-label">{{ b.label }}</span>
+                <span class="hbar-track"><span class="hbar-fill" [style.width.%]="100 * b.value / survey.n"></span></span>
+                <span class="hbar-val">{{ b.value }} из {{ survey.n }}</span>
+              </li>
+            }
+          </ul>
+          <p class="chart-note">Самое важное: ИИ используют все, а источники всегда проверяет только один из одиннадцати.</p>
+        </figure>
+
+        <figure class="chart">
+          <figcaption>
+            <h3>Проверка на 72 размеченных ссылках</h3>
+            <p>Что Trustable? сказал о ссылках, которые команда разметила вручную</p>
+          </figcaption>
+          <ul class="legend" aria-hidden="true">
+            <li><span class="lg lg-ok"></span>Верно</li><li><span class="lg lg-skip"></span>Не удалось проверить</li><li><span class="lg lg-bad"></span>Ошибка</li>
+          </ul>
+          <ul class="sbars" role="list">
+            @for (r of bench; track r.label) {
+              <li class="sbar">
+                <span class="sbar-label">{{ r.label }} <b>{{ r.total }}</b></span>
+                <span class="sbar-track">
+                  @if (r.ok) { <span class="seg seg-ok" [style.flex-grow]="r.ok" [attr.data-tip]="'Верно: ' + r.ok">{{ r.ok }}</span> }
+                  @if (r.skip) { <span class="seg seg-skip" [style.flex-grow]="r.skip" [attr.data-tip]="'Не удалось проверить: ' + r.skip">{{ r.skip }}</span> }
+                  @if (r.bad) { <span class="seg seg-bad" [style.flex-grow]="r.bad" [attr.data-tip]="'Ошибка: ' + r.bad">{{ r.bad }}</span> }
+                </span>
+              </li>
+            }
+          </ul>
+          <p class="chart-note">Ни один настоящий источник не назван выдуманным: две ошибки — настоящие ссылки, названные искажёнными. «Не удалось проверить» — база временно не ответила, и вместо догадки мы честно говорим «не знаем».</p>
+          <details class="chart-table">
+            <summary>Показать таблицей</summary>
+            <table>
+              <thead><tr><th>Размечено как</th><th>Верно</th><th>Не удалось проверить</th><th>Ошибка</th></tr></thead>
+              <tbody>
+                @for (r of bench; track r.label) { <tr><td>{{ r.label }} ({{ r.total }})</td><td>{{ r.ok }}</td><td>{{ r.skip }}</td><td>{{ r.bad }}</td></tr> }
+              </tbody>
+            </table>
+          </details>
+        </figure>
+      </div>
     </section>
 
     <section class="audience">
       <svg class="chrome c-aud-drop" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-drop" fill="url(#chrome)"/><use href="#p-drop" fill="url(#irid)"/></g></svg>
       <h2 class="section-title">Кому пригодится</h2>
-      <div class="audience-grid">
-        <div class="aud">
-          <h3>Студентам и школьникам</h3>
-          <p>Проверить реферат, эссе или курсовую до сдачи — и заменить выдуманную ссылку на настоящую работу в формате ГОСТ или APA.</p>
-        </div>
-        <div class="aud">
-          <h3>Преподавателям</h3>
+      <ul class="personas">
+        <li class="persona">
+          <span class="p-who">Студентам</span>
+          <p>Проверить реферат или курсовую до сдачи — и заменить выдуманную ссылку на настоящую работу в формате ГОСТ или APA.</p>
+          <button type="button" class="p-go" (click)="goCheck('file')">Проверить документ →</button>
+        </li>
+        <li class="persona">
+          <span class="p-who">Преподавателям</span>
           <p>Загрузить работу и за минуту увидеть, сколько источников настоящие. PDF-отчёт с QR-кодом — к проверке.</p>
-        </div>
-        <div class="aud">
-          <h3>Всем, кто читает</h3>
+          <button type="button" class="p-go" (click)="goCheck('file')">Загрузить работу →</button>
+        </li>
+        <li class="persona">
+          <span class="p-who">Всем, кто читает</span>
           <p>Проверить ответ нейросети, статью или пост перед тем, как поверить или поделиться.</p>
-        </div>
-      </div>
+          <button type="button" class="p-go" (click)="goCheck('answer')">Проверить текст →</button>
+        </li>
+      </ul>
     </section>
 
     <section class="faq">
