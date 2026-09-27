@@ -428,3 +428,16 @@ def test_number_elsewhere_in_source_is_not_a_mismatch(monkeypatch):
     cl = Claim(id="C1", text="Grok 3 ошибался в 94% запросов, а Perplexity — в 37%", citation_ids=["S1"])
     r = asyncio.run(judge_cited(cl, [cit], {"S1": sc}, {"S1": SourceText(source, "full", "https://x.org")}))
     assert r.verdict == "supported"
+
+
+def test_sentence_without_marker_is_not_linked_in_marker_style_answers(monkeypatch):
+    from app import extract as ex
+    text = ("Canberra is the capital of Australia. GPT-4 fabricated 18% of references [1].\n\n"
+            "[1] https://doi.org/10.1038/s41598-023-41032-5")
+    async def fake(system, user, max_tokens=0, role="judge"):
+        return {"citations": [{"id": "S1", "url": "https://doi.org/10.1038/s41598-023-41032-5"}],
+                "claims": [{"span": "Canberra is the capital of Australia.", "text": "a", "citation_ids": ["S1"]},
+                           {"span": "GPT-4 fabricated 18% of references", "text": "b", "citation_ids": ["S1"]}]}
+    monkeypatch.setattr(llm, "complete_json", fake)
+    claims, _ = asyncio.run(ex.extract(text))
+    assert [c.citation_ids for c in claims] == [[], ["S1"]] and claims[0].queries

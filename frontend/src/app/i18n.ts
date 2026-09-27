@@ -78,7 +78,7 @@ const ru: Dict = {
   check: {
     title: 'Что проверяем?', tabText: 'Текст', tabDoc: 'Документ', dzTitle: 'Перетащите документ сюда', dzBusy: 'Загружаю…',
     dzSub: 'курсовая, статья, эссе, отчёт, любой документ · .docx, .pdf, .txt, .md · до 10 МБ', dzPick: 'или выберите файл',
-    dzHint: 'Проверим каждый источник и утверждения, которые на него ссылаются.', sample: 'Попробовать на примере (DOCX)',
+    dzHint: 'Проверим каждый источник из списка литературы, утверждения со ссылками и главные факты в тексте без ссылок.', sample: 'Попробовать на примере (DOCX)',
     textLabel: 'Текст для проверки',
     placeholder: 'Вставьте любой текст: ответ нейросети, статью, новость, абзац из реферата. Если у текста есть список источников — вставьте и его.',
     chars: 'символов', run: 'Проверить',
@@ -122,7 +122,7 @@ const ru: Dict = {
     items: [
       { q: 'Это ещё один ИИ-детектор?', a: 'Нет. Мы не угадываем, написан ли текст нейросетью. Мы проверяем, правда ли то, что в нём написано: существуют ли источники, говорят ли они то, что им приписали, и совпадают ли цифры.' },
       { q: 'Почему проверке можно доверять, если в ней тоже есть нейросеть?', a: 'Нейросеть разбирает текст и предлагает вердикт, но обязана подкрепить его дословной цитатой. Существует ли источник, решают реестры публикаций; есть ли цитата в источнике и совпадают ли числа — код, и он может отменить вердикт нейросети. А сама цитата всегда перед глазами — проверить нас можно за пять секунд.' },
-      { q: 'Какие тексты можно проверить?', a: 'Лучше всего — ответы нейросетей со ссылками, а также статьи, новости, рефераты. Документы — .docx, .pdf, .txt, .md до 10 МБ: если в документе есть список литературы, проверим каждый источник из него, если нет — фактические утверждения из текста. Мнения, личные данные и советы не проверяем.' },
+      { q: 'Какие тексты можно проверить?', a: 'Лучше всего — ответы нейросетей со ссылками, а также статьи, новости, рефераты. Документы — .docx, .pdf, .txt, .md до 10 МБ: если в документе есть список литературы, проверим каждый источник из него; фактические утверждения из текста проверим в любом случае, а если источник закрыт — по открытым источникам в интернете. Мнения, личные данные и советы не проверяем.' },
       { q: 'Что значит «нет доступа»?', a: 'Источник закрыт пейволом или защитой от ботов, либо научная база временно не ответила. Такой источник мы не называем выдуманным: повторите проверку позже или откройте ссылку сами.' },
       { q: 'Что происходит с моим текстом?', a: 'Для разбора текст передаётся провайдеру языковой модели (Gemini или Groq), а поисковые запросы — поисковому сервису. Отчёт хранится на сервере, чтобы открываться по ссылке. Мы не публикуем тексты и сами не используем их для обучения.' },
     ],
@@ -210,7 +210,7 @@ const en: Dict = {
   check: {
     title: 'What are we checking?', tabText: 'Text', tabDoc: 'Document', dzTitle: 'Drop a document here', dzBusy: 'Uploading…',
     dzSub: 'coursework, article, essay, report, any document · .docx, .pdf, .txt, .md · up to 10 MB', dzPick: 'or choose a file',
-    dzHint: 'We check every source and the claims that cite it.', sample: 'Try an example (DOCX)',
+    dzHint: 'We check every source in the reference list, the claims that cite them and the key uncited facts in the text.', sample: 'Try an example (DOCX)',
     textLabel: 'Text to check',
     placeholder: 'Paste any text: an AI answer, an article, a news story, a paragraph from an essay. If it has a list of sources, paste that too.',
     chars: 'characters', run: 'Check',
@@ -254,7 +254,7 @@ const en: Dict = {
     items: [
       { q: 'Is this another AI detector?', a: 'No. We do not guess whether a text was written by an AI. We check whether what it says is true: whether the sources exist, whether they say what is attributed to them, and whether the numbers match.' },
       { q: 'Why trust the check if it also uses an AI?', a: 'The AI parses the text and proposes a verdict, but must back it with a verbatim quote. Whether a source exists is decided by publication registries; whether the quote is in the source and the numbers match is decided by code, which can overrule the AI. And the quote is always on screen — you can check us in five seconds.' },
-      { q: 'What texts can I check?', a: 'Best of all, AI answers with references, as well as articles, news and essays. Documents — .docx, .pdf, .txt, .md up to 10 MB: if a document has a reference list, we check every source in it; if not, the factual claims in the text. We do not check opinions, personal data or advice.' },
+      { q: 'What texts can I check?', a: 'Best of all, AI answers with references, as well as articles, news and essays. Documents — .docx, .pdf, .txt, .md up to 10 MB: if a document has a reference list, we check every source in it; the factual claims in the text are checked either way, and if a source is closed — against open sources on the web. We do not check opinions, personal data or advice.' },
       { q: 'What does “no access” mean?', a: 'The source is behind a paywall or bot protection, or a scholarly database did not respond. We do not call such a source fake: retry later or open the link yourself.' },
       { q: 'What happens to my text?', a: 'For parsing, the text is sent to the language-model provider (Gemini or Groq), and search queries go to the search service. The report is stored on the server so it opens by link. We do not publish texts and do not use them for training ourselves.' },
     ],
@@ -342,7 +342,7 @@ const kk: Dict = {
   check: {
     title: 'Нені тексереміз?', tabText: 'Мәтін', tabDoc: 'Құжат', dzTitle: 'Құжатты осында сүйреп әкеліңіз', dzBusy: 'Жүктеліп жатыр…',
     dzSub: 'курстық жұмыс, мақала, эссе, есеп, кез келген құжат · .docx, .pdf, .txt, .md · 10 МБ-қа дейін', dzPick: 'немесе файлды таңдаңыз',
-    dzHint: 'Әр дереккөзді және оған сілтейтін тұжырымдарды тексереміз.', sample: 'Мысалмен көру (DOCX)',
+    dzHint: 'Әдебиеттер тізіміндегі әр дереккөзді, сілтемесі бар тұжырымдарды және мәтіндегі сілтемесіз негізгі фактілерді тексереміз.', sample: 'Мысалмен көру (DOCX)',
     textLabel: 'Тексерілетін мәтін',
     placeholder: 'Кез келген мәтінді қойыңыз: нейрожелі жауабы, мақала, жаңалық, рефераттан үзінді. Мәтіннің дереккөздер тізімі болса, оны да қойыңыз.',
     chars: 'таңба', run: 'Тексеру',
@@ -386,7 +386,7 @@ const kk: Dict = {
     items: [
       { q: 'Бұл тағы бір ЖИ-детектор ма?', a: 'Жоқ. Біз мәтінді нейрожелі жазғанын болжамаймыз. Онда жазылғанның шындығын тексереміз: дереккөздер бар ма, оларға телінген нәрсені айта ма және сандар сәйкес келе ме.' },
       { q: 'Тексеруде де нейрожелі болса, неге оған сенуге болады?', a: 'Нейрожелі мәтінді талдап, қорытынды ұсынады, бірақ оны сөзбе-сөз дәйексөзбен дәлелдеуге міндетті. Дереккөздің бар-жоғын басылымдар тізілімдері шешеді; дәйексөздің дереккөзде бар-жоғын және сандардың сәйкестігін код шешеді, ол нейрожелінің қорытындысын жоя алады. Ал дәйексөздің өзі әрдайым көз алдыңызда — бізді бес секундта тексере аласыз.' },
-      { q: 'Қандай мәтіндерді тексеруге болады?', a: 'Ең жақсысы — сілтемелері бар нейрожелі жауаптары, сондай-ақ мақалалар, жаңалықтар, рефераттар. Құжаттар — .docx, .pdf, .txt, .md, 10 МБ-қа дейін: құжатта әдебиеттер тізімі болса, ондағы әр дереккөзді тексереміз, болмаса — мәтіндегі фактілік тұжырымдарды. Пікірлерді, жеке деректерді және кеңестерді тексермейміз.' },
+      { q: 'Қандай мәтіндерді тексеруге болады?', a: 'Ең жақсысы — сілтемелері бар нейрожелі жауаптары, сондай-ақ мақалалар, жаңалықтар, рефераттар. Құжаттар — .docx, .pdf, .txt, .md, 10 МБ-қа дейін: құжатта әдебиеттер тізімі болса, ондағы әр дереккөзді тексереміз; мәтіндегі фактілік тұжырымдарды кез келген жағдайда тексереміз, ал дереккөз жабық болса — интернеттегі ашық дереккөздер бойынша. Пікірлерді, жеке деректерді және кеңестерді тексермейміз.' },
       { q: '«Қолжетімсіз» нені білдіреді?', a: 'Дереккөз ақылы немесе боттардан қорғалған, не ғылыми база уақытша жауап бермеді. Мұндай дереккөзді жалған деп атамаймыз: кейінірек қайта тексеріңіз немесе сілтемені өзіңіз ашыңыз.' },
       { q: 'Менің мәтінім не болады?', a: 'Талдау үшін мәтін тілдік модель провайдеріне (Gemini немесе Groq), ал іздеу сұраулары іздеу сервисіне жіберіледі. Есеп сілтеме арқылы ашылуы үшін серверде сақталады. Біз мәтіндерді жарияламаймыз және оларды өзіміз оқыту үшін қолданбаймыз.' },
     ],

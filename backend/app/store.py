@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator, Optional
 
-from . import i18n
+from . import i18n, llm
 from .config import settings
 from .pipeline import PIPELINE_VERSION, run
 
@@ -108,7 +108,8 @@ async def _run(job: Job) -> None:
                 job.cond.notify_all()
     except Exception as e:  # noqa: BLE001
         async with job.cond:
-            job.events.append({"type": "error", "message": f"{type(e).__name__}: {e}"})
+            msg = i18n.tr("err.llm_busy") if isinstance(e, llm.LLMError) else i18n.tr("internal_error", err=type(e).__name__)
+            job.events.append({"type": "error", "message": msg})
     finally:
         async with job.cond:
             job.done = True

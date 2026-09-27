@@ -231,3 +231,41 @@ def test_report_without_references_skips_title_page_and_personal_facts():
     assert "ВВП Казахстана вырос на 6,5%" in part and "21 банк" in part and "20 миллионов" in part
     for personal in ("Иванов", "Сроки практики", "обязанности", "ознакомился", "Руководитель"):
         assert personal not in part
+
+
+def test_uncited_facts_of_a_paper_are_checked_too():
+    from app.bibliography import cited_claims, uncited_claims
+    body = ("Введение. Я выполнил эту работу в рамках практики на кафедре.\n"
+            "По данным Бюро национальной статистики, население Казахстана составляет 20 миллионов человек.\n"
+            "Рынок цифровых услуг растёт на 12% в год [1].")
+    _, _, cits = _parsed(body + "\n\nСписок литературы\n1. Иванов И. И. Цифровая экономика // Вестник КазНУ. — 2021. — № 3.")
+    cited = cited_claims(body, cits)
+    extra = uncited_claims(body, cited)
+    assert [c.citation_ids for c in cited] == [["S1"]]
+    assert len(extra) == 1 and "20 миллионов" in extra[0].text and extra[0].queries and extra[0].id == "C2"
+
+
+def test_unreadable_source_falls_back_to_web_search(monkeypatch):
+    import asyncio
+
+    from app import judge, llm
+    from app.models import Citation, Claim
+    from app.search import Hit
+    from app.sources import SourceText
+    hit = Hit("https://ru.wikipedia.org/wiki/Байконур", "Байконур",
+              "Байконур — космодром, расположенный на территории Кызылординской области Казахстана.", "q", False)
+
+    async def fake_search(queries):
+        return [hit]
+
+    async def fake_llm(system, user, max_tokens=0, role="judge"):
+        return {"verdict": "contradicted", "reason": "Кызылординская.", "evidence": [
+            {"passage": "P1", "stance": "contradicts", "quote": "космодром, расположенный на территории Кызылординской области Казахстана"}]}
+
+    monkeypatch.setattr(judge.search, "gather_evidence", fake_search)
+    monkeypatch.setattr(llm, "complete_json", fake_llm)
+    cit = Citation(id="S1", kind="web", url="https://closed.example")
+    sc = SourceCheck(citation_id="S1", status="unreachable", method="http", detail="403")
+    cl = Claim(id="C1", text="Байконур находится в Карагандинской области", citation_ids=["S1"])
+    r = asyncio.run(judge.judge_claim(cl, [cit], {"S1": sc}, {"S1": SourceText("", "none")}))
+    assert r.verdict == "contradicted" and r.mode == "attack" and r.evidence

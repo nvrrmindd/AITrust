@@ -12,6 +12,7 @@ from . import llm
 from .models import Citation, Claim, ClaimResult, Evidence, MatchedRecord, NumberCheck, SearchInfo, SourceCheck
 from .prompts import JUDGE_ATTACK_SYSTEM, JUDGE_CITED_SYSTEM
 from .i18n import LLM_LANGUAGE, current, tr
+from . import search
 from .search import TIER_RU, Hit
 from .search import provider as search_provider
 from .sources import SourceText
@@ -81,7 +82,7 @@ async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: So
     try:
         out = await llm.complete_json(_in_lang(JUDGE_CITED_SYSTEM), user, max_tokens=600)
     except llm.LLMError as e:
-        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="cited", reason=tr("j.llm_fail", err=e), error=True)
+        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="cited", reason=_llm_error(e), error=True)
 
     verdict = str(out.get("verdict", "not_mentioned"))
     quote = str(out.get("quote") or "").strip()
@@ -157,7 +158,7 @@ async def judge_attack(claim: Claim, hits: list[Hit], queries: list[str] | None 
     try:
         out = await llm.complete_json(_in_lang(JUDGE_ATTACK_SYSTEM), f"Утверждение: {claim.text}\n\nФрагменты:\n{block}", max_tokens=900)
     except llm.LLMError as e:
-        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="attack", reason=tr("j.llm_fail", err=e), search=info, error=True)
+        return ClaimResult(claim_id=claim.id, verdict="unverifiable", mode="attack", reason=_llm_error(e), search=info, error=True)
 
     evidence: list[Evidence] = []
     notes: list[str] = []
@@ -229,3 +230,27 @@ def _in_lang(system: str) -> str:
     lang = LLM_LANGUAGE[current()]
     tail = "" if current() == "ru" else f"\n\nВАЖНО: поле reason пиши {lang}, даже если утверждение и источник на другом языке."
     return system.replace("по-русски", lang) + tail
+
+
+def _llm_error(e: Exception) -> str:
+    return tr("j.llm_quota") if isinstance(e, llm.QuotaExhausted) else tr("j.llm_fail", err=e)
+
+
+async def judge_claim(claim: Claim, cits: list[Citation], checks: dict[str, SourceCheck],
+                      texts: dict[str, SourceText]) -> ClaimResult:
+    """One entry point for every claim.
+    - no source given → search the web for support AND refutation;
+    - a source is given → judge against it; if it could not be read (paywall, bot wall, abstract without the
+      fact), check the claim on the open web instead of stopping at "could not check"."""
+    if not cits:
+        queries = claim.queries or [claim.text[:160]]
+        return await judge_attack(claim, await search.gather_evidence(queries), queries)
+    res = await judge_cited(claim, cits, checks, texts)
+    if res.verdict != "unverifiable" or res.error or res.evidence:
+        return res
+    queries = claim.queries or [claim.text[:160]]
+    web = await judge_attack(claim, await search.gather_evidence(queries), queries)
+    if web.verdict in ("supported", "contradicted"):
+        web.notes.insert(0, tr("j.fallback_note"))
+        return web
+    return res

@@ -138,10 +138,16 @@ async def extract(text: str) -> tuple[list[Claim], list[Citation]]:
         cids = [id_map.get(x, x) for x in (c.get("citation_ids") or [])]
         if start >= 0:
             # explicit [n] markers in the claim's sentence beat whatever the LLM linked
-            tail = _SENT_TAIL.match(text, end)
+            # the span may already end with its full stop — then the "rest of the sentence" is empty,
+            # otherwise we would swallow the NEXT sentence and its [n] marker
+            ends_sentence = text[start:end].rstrip().endswith((".", "!", "?"))
+            tail = None if ends_sentence else _SENT_TAIL.match(text, end)
             marked = [f"S{n}" for n in _marker_numbers(text[start:tail.end() if tail else end])]
             if any(m in ids for m in marked):
                 cids = marked
+            elif _MARKER.search(text):
+                # the answer cites with [n] markers, but this sentence has none: the LLM's link is a guess
+                cids = []
         cids = list(dict.fromkeys(x for x in cids if x in ids))
         queries = [str(q) for q in (c.get("queries") or []) if str(q).strip()][:3]
         if not cids and not queries:

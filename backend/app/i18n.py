@@ -270,6 +270,21 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "No source was given — we searched for both confirmation and refutation ({prov}, pages read: {n}).",
         "kk": "Дереккөз көрсетілмеген — растауды да, теріске шығаруды да іздедік ({prov}, оқылған беттер: {n}).",
     },
+    "j.llm_quota": {
+        "ru": "Бесплатный лимит языковой модели сейчас исчерпан, поэтому вердикт не вынесен. Попробуйте позже: лимиты обновляются в течение суток.",
+        "en": "The free language-model limit is exhausted right now, so no verdict was given. Try again later: the limits refresh within a day.",
+        "kk": "Тілдік модельдің тегін лимиті қазір таусылды, сондықтан қорытынды шығарылмады. Кейінірек қайталап көріңіз: лимиттер бір тәулік ішінде жаңарады.",
+    },
+    "j.fallback_note": {
+        "ru": "Источник по ссылке прочитать не удалось, поэтому утверждение проверено по открытым источникам в интернете.",
+        "en": "The cited source could not be read, so the claim was checked against open sources on the web.",
+        "kk": "Сілтемедегі дереккөзді оқу мүмкін болмады, сондықтан тұжырым интернеттегі ашық дереккөздер бойынша тексерілді.",
+    },
+    "err.llm_busy": {
+        "ru": "Не удалось разобрать текст: бесплатные лимиты языковой модели сейчас исчерпаны. Попробуйте позже или откройте готовые примеры — они работают без лимитов.",
+        "en": "Could not parse the text: the free language-model limits are exhausted right now. Try again later or open the ready-made examples — they work without limits.",
+        "kk": "Мәтінді талдау мүмкін болмады: тілдік модельдің тегін лимиттері қазір таусылды. Кейінірек қайталап көріңіз немесе дайын мысалдарды ашыңыз — олар лимитсіз жұмыс істейді.",
+    },
     "prov.web": {"ru": "веб-поиск", "en": "web search", "kk": "веб-іздеу"},
     "prov.wiki": {"ru": "только Википедия", "en": "Wikipedia only", "kk": "тек Уикипедия"},
     "certainty.exact": {"ru": "точное число {n}", "en": "exact number {n}", "kk": "нақты сан {n}"},

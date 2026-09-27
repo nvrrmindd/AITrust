@@ -20,7 +20,7 @@ from . import llm
 from .config import settings
 from .i18n import tr
 from .extract import _marker_numbers, _norm_citation
-from .judge import judge_cited
+from .judge import judge_claim
 from .models import Citation, Claim, ClaimResult, SourceCheck
 from .pipeline import run, summarize
 from .replacements import find_replacements
@@ -281,6 +281,33 @@ def checkable_text(text: str, budget: int) -> str:
     return "\n\n".join(sent for _, sent in sorted(chosen))
 
 
+MAX_UNCITED = 6
+
+
+def uncited_claims(body: str, taken: list[Claim], limit: int = MAX_UNCITED) -> list[Claim]:
+    """Factual sentences of the paper that cite nothing: checked on the open web (support AND refutation).
+    Same scoring as for documents without a reference list, so title pages and «я на практике…» are skipped."""
+    spans = [(c.start, c.end) for c in taken]
+    found = []
+    for a, b in _sentences_with_offsets(body):
+        sent = body[a:b].strip()
+        start = body.find(sent, a)
+        if any(s <= start < e or start <= s < start + len(sent) for s, e in spans):
+            continue
+        if _NUM_MARK.search(sent) or _AY_MARK.search(sent):
+            continue
+        sc = _sentence_score(sent)
+        if sc >= 3:
+            found.append((sc, start, sent))
+    chosen = sorted(sorted(found, key=lambda f: (-f[0], f[1]))[:limit], key=lambda f: f[1])
+    out = []
+    for i, (_, start, sent) in enumerate(chosen, start=len(taken) + 1):
+        tone, markers = certainty(sent)
+        out.append(Claim(id=f"C{i}", text=sent[:400], span=sent, start=start, end=start + len(sent),
+                         citation_ids=[], certainty=tone, certainty_markers=markers, queries=[sent[:160]]))  # type: ignore[arg-type]
+    return out
+
+
 # ---------------------------------------------------------------- 3. orchestration
 
 def score(checks: list[SourceCheck], total: int) -> dict:
@@ -324,6 +351,7 @@ async def run_document(text: str, filename: str) -> AsyncIterator[dict]:
     citations = await parse_all(refs)
     yield {"type": "bibliography", "items": [_item(c, None) for c in citations]}
     claims = cited_claims(body, citations)
+    claims += uncited_claims(body, claims)
     yield {"type": "extracted", "claims": [c.model_dump() for c in claims], "citations": [c.model_dump() for c in citations]}
     yield {"type": "stage", "stage": "verify", "message": tr("stage.bib_verify", a=len(citations), b=len(claims))}
 
@@ -357,7 +385,7 @@ async def run_document(text: str, filename: str) -> AsyncIterator[dict]:
         try:
             for cid in cl.citation_ids:
                 await done[cid].wait()
-            res = await judge_cited(cl, [by_id[i] for i in cl.citation_ids], checks, texts)
+            res = await judge_claim(cl, [by_id[i] for i in cl.citation_ids], checks, texts)
         except Exception as e:  # noqa: BLE001
             log.exception("claim %s failed", cl.id)
             res = ClaimResult(claim_id=cl.id, verdict="unverifiable", mode="cited", reason=tr("internal_error", err=type(e).__name__), error=True)

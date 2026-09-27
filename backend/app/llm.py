@@ -19,6 +19,10 @@ class LLMError(Exception):
     pass
 
 
+class QuotaExhausted(LLMError):
+    """Every model of the fallback chain hit its (daily / per-minute) free limit."""
+
+
 class RateLimited(LLMError):
     def __init__(self, msg: str, wait: float, daily: bool = False):
         super().__init__(msg)
@@ -121,6 +125,7 @@ async def complete_json(system: str, user: str, *, max_tokens: int = 2000, role:
         raise LLMError("LLM_API_KEY is not set")
     last: Exception | None = None
     failures = 0
+    ep: Endpoint | None = None
     for _ in range(20):  # 429/503 waits are cheap; other errors stop after 3
         ep = endpoint_for(role)
         if ep is None:
@@ -149,6 +154,8 @@ async def complete_json(system: str, user: str, *, max_tokens: int = 2000, role:
             log.warning("LLM %s attempt %s failed: %s", ep.name, failures, e)
             if failures >= 3:
                 break
+    if ep is None or isinstance(last, RateLimited):
+        raise QuotaExhausted(str(last))
     raise LLMError(str(last))
 
 

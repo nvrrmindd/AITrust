@@ -9,7 +9,7 @@ from typing import AsyncIterator
 
 from . import i18n, search
 from .extract import extract
-from .judge import judge_attack, judge_cited
+from .judge import judge_claim
 from .models import Citation, Claim, ClaimResult, SourceCheck, Summary
 from .replacements import find_replacements
 from .sources import SourceText, check_citation
@@ -88,13 +88,9 @@ async def run(text: str) -> AsyncIterator[dict]:
 
     async def do_claim(cl: Claim) -> None:
         try:
-            if cl.citation_ids:
-                for cid in cl.citation_ids:
-                    await source_done[cid].wait()
-                res = await judge_cited(cl, [cit_by_id[i] for i in cl.citation_ids], checks, texts)
-            else:
-                hits = await search.gather_evidence(cl.queries)
-                res = await judge_attack(cl, hits, cl.queries)
+            for cid in cl.citation_ids:
+                await source_done[cid].wait()
+            res = await judge_claim(cl, [cit_by_id[i] for i in cl.citation_ids], checks, texts)
         except Exception as e:  # noqa: BLE001
             log.exception("claim %s failed", cl.id)
             res = ClaimResult(claim_id=cl.id, verdict="unverifiable", mode="cited" if cl.citation_ids else "attack",
