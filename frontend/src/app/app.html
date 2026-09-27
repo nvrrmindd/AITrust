@@ -1,10 +1,8 @@
 <header class="topbar">
   <a class="brand" href="/" (click)="$event.preventDefault(); reset()">
     <span class="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 32 32" width="30" height="30"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#6366F1"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient></defs>
-        <rect width="32" height="32" rx="9" fill="url(#bm)"/>
-        <path d="M9 16.5l4.5 4.5L23 11" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="#1c1b19"/>
+        <path d="M9 16.5l4.5 4.5L23 11" stroke="#ffe27a" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </span>
     <span class="brand-name">Пруф</span>
   </a>
@@ -19,17 +17,12 @@
 @if (view() === 'input') {
   <main class="intro">
     <section class="intro-copy">
-      <span class="eyebrow"><span class="eyebrow-dot"></span>«А пруфы есть?» — спросите у ИИ</span>
-      <h1>Ответ ИИ выглядит убедительно. <span class="grad">Покажем, что написано в&nbsp;его источниках.</span></h1>
+      <p class="eyebrow">«А пруфы есть?» — теперь это можно спросить у ИИ</p>
+      <h1>Ответ ИИ выглядит убедительно. Покажем, <span class="marker">что написано в&nbsp;его источниках</span>.</h1>
       <p class="lede">
         Вставьте ответ ChatGPT, Gemini или Claude — или загрузите курсовую целиком. Пруф проверит, существуют ли источники,
         говорят ли они то, что им приписали, и сходятся ли цифры. Каждый вывод — с дословной цитатой, которую можно открыть.
       </p>
-      <ul class="stats" aria-label="Точность на размеченном наборе из 72 ссылок">
-        <li><b>0 из 34</b><span>настоящих источников ложно названы выдуманными</span></li>
-        <li><b>15 из 15</b><span>искажённых ссылок пойманы</span></li>
-        <li><b>~3 с</b><span>на проверку одной ссылки вместо ~8 минут вручную</span></li>
-      </ul>
     </section>
 
     <div class="tabs" role="tablist" aria-label="Что проверяем">
@@ -132,7 +125,7 @@
         </div>
       }
       @if (summary(); as s) {
-        <h1 class="headline">{{ s.headline }}</h1>
+        <h1 class="headline" [class.is-secondary]="doc()">{{ s.headline }}</h1>
       } @else {
         <h1 class="headline headline-pending">{{ stage() }}</h1>
       }
@@ -185,13 +178,13 @@
                         <ul class="diffs">@for (d of chk.differences; track $index) { <li>{{ d }}</li> }</ul>
                       }
                       @if (chk.status === 'not_found') {
-                        @let works = replacements()[b.id];
-                        @if (works?.length) {
-                          <span class="bib-repl">Реальная работа по теме:
-                            @if (works![0].url) { <a [href]="works![0].url" target="_blank" rel="noopener">{{ works![0].title }}</a> }
-                            @else { {{ works![0].title }} }
-                            ({{ works![0].year }})
-                            <button type="button" class="ghost small no-print" (click)="copyRef(works![0], 'gost', b.id + ':gost')">
+                        @let w = confirmedWork(b.id);
+                        @if (w) {
+                          <span class="bib-repl">Реальная работа, которая подтверждает это утверждение:
+                            @if (w.url) { <a [href]="w.url" target="_blank" rel="noopener">{{ w.title }}</a> }
+                            @else { {{ w.title }} }
+                            ({{ w.year }})
+                            <button type="button" class="ghost small no-print" (click)="copyRef(w, 'gost', b.id + ':gost')">
                               {{ copiedRef() === b.id + ':gost' ? 'Скопировано' : 'ГОСТ' }}
                             </button>
                           </span>

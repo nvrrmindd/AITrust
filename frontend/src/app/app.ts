@@ -150,6 +150,11 @@ export class App implements OnInit, OnDestroy {
 
   reportUrl = computed(() => (this.reportId() ? `${location.origin}/r/${this.reportId()}` : ''));
 
+  /** A suggested replacement only counts in the bibliography table if its abstract confirms the claim. */
+  confirmedWork(cid: string): Replacement | null {
+    return (this.replacements()[cid] ?? []).find((w) => w.confirmed) ?? null;
+  }
+
   claimsForCitation(cid: string): Claim[] { return this.claims().filter((c) => c.citation_ids.includes(cid)); }
 
   citationLabel(cid: string | null | undefined): string {
