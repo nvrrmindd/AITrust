@@ -1,0 +1,75 @@
+@startuml components
+title Пруф — архитектура (компоненты)
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor #FFFFFF
+  BackgroundColor<<nollm>> #D9F2E3
+  BorderColor<<nollm>> #22A55B
+  BackgroundColor<<llm>> #E4E6FF
+  BorderColor<<llm>> #5B5BF0
+}
+skinparam cloud {
+  BackgroundColor #F1F3F9
+}
+legend right
+  зелёный — решает КОД, без нейросети
+  синий — языковая модель (только предлагает)
+  серый — внешние открытые API
+endlegend
+
+node "Браузер" {
+  [Angular 20 UI\nsignals + SSE\nразметка текста, карточки, PDF + QR] as UI
+}
+
+node "FastAPI (один Docker-контейнер, без БД)" {
+  [main.py\nPOST /api/check\nPOST /api/check-file\nGET /api/check/{id}/events (SSE)] as API
+  [store.py\nзадачи, кэш по хэшу, отчёты /r/<id>] as STORE
+  [documents.py\ndocx / pdf / txt → текст] as DOCS <<nollm>>
+  [bibliography.py\nсписок литературы → ссылки → regex] as BIB <<nollm>>
+  [extract.py\nутверждения + источники] as EXT <<llm>>
+  [sources.py\nсуществует ли источник?\nтекст источника] as SRC <<nollm>>
+  [textutil.py\nBM25 + числа\nпроверка цитат, сравнение чисел] as TXT <<nollm>>
+  [judge.py\nвердикт + цитата] as JUDGE <<llm>>
+  [search.py\nподтверждения И опровержения\nуровни надёжности сайтов] as SEARCH
+  [replacements.py\nреальные работы вместо выдуманных] as REPL
+  [llm.py\nмодели по ролям, запасные модели,\nожидание при лимитах] as LLM
+}
+
+cloud "Реестры и базы" <<ext>> {
+  [doi.org Handle API] as DOI
+  [Crossref] as CR
+  [OpenAlex] as OA
+}
+cloud "Веб" <<ext>> {
+  [Сайты источников\n(+ Jina Reader, Wayback)] as WEB
+  [Tavily / Википедия] as TAV
+}
+cloud "LLM-провайдер" <<ext>> {
+  [Gemini / Groq / OpenAI /\nAnthropic / OpenRouter] as PROV
+}
+
+UI --> API : HTTP + SSE
+API --> STORE
+STORE --> EXT : режим «Ответ ИИ»
+STORE --> DOCS : режим «Работа целиком»
+DOCS --> BIB
+BIB --> LLM : только неразобранные ссылки,\nодин батч
+EXT --> LLM
+EXT --> SRC
+BIB --> SRC
+SRC --> DOI
+SRC --> CR
+SRC --> OA
+SRC --> WEB : SSRF-защита\nна каждом редиректе
+SRC --> TXT : текст источника
+TXT --> JUDGE : лучшие фрагменты
+JUDGE --> LLM
+JUDGE --> TXT : цитата есть в тексте?\nчисла совпадают?
+EXT --> SEARCH : нет источника
+SEARCH --> TAV
+SEARCH --> JUDGE
+SRC --> REPL : источник не найден
+REPL --> OA
+LLM --> PROV
+@enduml

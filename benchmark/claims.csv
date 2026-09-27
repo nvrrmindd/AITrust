@@ -1,0 +1,101 @@
+id,lang,topic,claim,label,mutation,source_url
+c001,ru,kz,"Казахстан провозгласил независимость 16 декабря 1991 года.",true,none,https://ru.wikipedia.org/wiki/День_Независимости_Казахстана
+c002,ru,kz,"Казахстан провозгласил независимость 25 декабря 1991 года.",false,date,https://ru.wikipedia.org/wiki/День_Независимости_Казахстана
+c003,ru,kz,"Столица Казахстана была перенесена из Алматы в Акмолу в 1997 году.",true,none,https://ru.wikipedia.org/wiki/Астана
+c004,ru,kz,"Столица Казахстана была перенесена из Алматы в Акмолу в 2001 году.",false,date,https://ru.wikipedia.org/wiki/Астана
+c005,ru,kz,"Космодром Байконур расположен в Кызылординской области Казахстана.",true,none,https://ru.wikipedia.org/wiki/Байконур
+c006,ru,kz,"Космодром Байконур расположен в Карагандинской области Казахстана.",false,entity,https://ru.wikipedia.org/wiki/Байконур
+c007,ru,kz,"Казахстан — крупнейшая по площади страна мира, не имеющая выхода к Мировому океану.",true,none,https://ru.wikipedia.org/wiki/Казахстан
+c008,ru,kz,"Казахстан — крупнейшая по площади страна мира.",false,overclaim,https://ru.wikipedia.org/wiki/Казахстан
+c009,ru,kz,"Западная часть озера Балхаш пресная, а восточная — солоноватая.",true,none,https://ru.wikipedia.org/wiki/Балхаш
+c010,ru,kz,"Озеро Балхаш полностью пресное.",false,overclaim,https://ru.wikipedia.org/wiki/Балхаш
+c011,ru,kz,"Абай Кунанбаев родился в 1845 году.",true,none,https://ru.wikipedia.org/wiki/Абай_Кунанбаев
+c012,ru,kz,"Абай Кунанбаев родился в 1865 году.",false,date,https://ru.wikipedia.org/wiki/Абай_Кунанбаев
+c013,ru,kz,"Первым президентом Казахстана был Нурсултан Назарбаев.",true,none,https://ru.wikipedia.org/wiki/Президент_Республики_Казахстан
+c014,ru,kz,"Первым президентом Казахстана был Касым-Жомарт Токаев.",false,entity,https://ru.wikipedia.org/wiki/Президент_Республики_Казахстан
+c015,ru,kz,"Национальная валюта тенге была введена 15 ноября 1993 года.",true,none,https://ru.wikipedia.org/wiki/Казахстанский_тенге
+c016,ru,kz,"Национальная валюта тенге была введена 15 ноября 1995 года.",false,date,https://ru.wikipedia.org/wiki/Казахстанский_тенге
+c017,ru,kz,"Казахстан граничит с Китаем.",true,none,https://ru.wikipedia.org/wiki/Казахстан
+c018,ru,kz,"Казахстан граничит с Монголией.",false,entity,https://ru.wikipedia.org/wiki/Казахстан
+c019,ru,kz,"Семипалатинский ядерный полигон был закрыт в 1991 году.",true,none,https://ru.wikipedia.org/wiki/Семипалатинский_испытательный_полигон
+c020,ru,kz,"Семипалатинский ядерный полигон был закрыт в 1995 году.",false,date,https://ru.wikipedia.org/wiki/Семипалатинский_испытательный_полигон
+c021,ru,kz,"Казахстан — девятая по площади страна мира.",true,none,https://ru.wikipedia.org/wiki/Казахстан
+c022,ru,kz,"Казахстан — седьмая по площади страна мира.",false,number,https://ru.wikipedia.org/wiki/Казахстан
+c023,ru,kz,"В 2022 году столице Казахстана вернули название Астана.",true,none,https://ru.wikipedia.org/wiki/Астана
+c024,ru,kz,"В 2020 году столице Казахстана вернули название Астана.",false,date,https://ru.wikipedia.org/wiki/Астана
+c025,ru,kz,"Указ о переводе казахского алфавита на латиницу был подписан в 2017 году.",true,none,https://ru.wikipedia.org/wiki/Казахский_алфавит
+c026,ru,kz,"Указ о переводе казахского алфавита на латиницу был подписан в 2007 году.",false,date,https://ru.wikipedia.org/wiki/Казахский_алфавит
+c027,ru,kz,"На 2025 год население Казахстана превышает 20 миллионов человек.",true,none,https://stat.gov.kz
+c028,ru,kz,"На 2025 год население Казахстана превышает 25 миллионов человек.",false,number,https://stat.gov.kz
+c029,ru,kz,"Акции Kaspi.kz начали торговаться на бирже Nasdaq в январе 2024 года.",true,none,https://en.wikipedia.org/wiki/Kaspi.kz
+c030,ru,kz,"Акции Kaspi.kz начали торговаться на бирже Nasdaq в 2019 году.",false,date,https://en.wikipedia.org/wiki/Kaspi.kz
+c031,ru,kz,"Казахстанско-Британский технический университет основан в 2001 году.",true,none,https://ru.wikipedia.org/wiki/Казахстанско-Британский_технический_университет
+c032,ru,kz,"Казахстанско-Британский технический университет основан в 1991 году.",false,date,https://ru.wikipedia.org/wiki/Казахстанско-Британский_технический_университет
+c033,ru,kz,"Юрий Гагарин 12 апреля 1961 года стартовал с космодрома Байконур.",true,none,https://ru.wikipedia.org/wiki/Восток-1
+c034,ru,kz,"Юрий Гагарин 12 апреля 1961 года стартовал с космодрома Плесецк.",false,entity,https://ru.wikipedia.org/wiki/Восток-1
+c035,en,science,"The speed of light in vacuum is 299,792,458 metres per second.",true,none,https://en.wikipedia.org/wiki/Speed_of_light
+c036,en,science,"The speed of light in vacuum is 199,792,458 metres per second.",false,number,https://en.wikipedia.org/wiki/Speed_of_light
+c037,ru,science,"При нормальном атмосферном давлении вода кипит при 100 °C.",true,none,https://ru.wikipedia.org/wiki/Кипение
+c038,ru,science,"Вода кипит при 100 °C на любой высоте над уровнем моря.",false,overclaim,https://ru.wikipedia.org/wiki/Кипение
+c039,en,geo,"According to the 2020 survey, the height of Mount Everest is 8,848.86 metres.",true,none,https://en.wikipedia.org/wiki/Mount_Everest
+c040,en,geo,"According to the 2020 survey, the height of Mount Everest is 8,611 metres.",false,number,https://en.wikipedia.org/wiki/Mount_Everest
+c041,ru,science,"Скелет взрослого человека состоит из 206 костей.",true,none,https://ru.wikipedia.org/wiki/Скелет_человека
+c042,ru,science,"Скелет взрослого человека состоит из 306 костей.",false,number,https://ru.wikipedia.org/wiki/Скелет_человека
+c043,en,science,"Watson and Crick published the double helix structure of DNA in 1953.",true,none,https://en.wikipedia.org/wiki/Molecular_Structure_of_Nucleic_Acids
+c044,en,science,"Watson and Crick published the double helix structure of DNA in 1963.",false,date,https://en.wikipedia.org/wiki/Molecular_Structure_of_Nucleic_Acids
+c045,en,it,"The Transformer architecture was introduced in the 2017 paper Attention Is All You Need.",true,none,https://en.wikipedia.org/wiki/Attention_Is_All_You_Need
+c046,en,it,"The Transformer architecture was introduced in the 2014 paper Attention Is All You Need.",false,date,https://en.wikipedia.org/wiki/Attention_Is_All_You_Need
+c047,en,it,"Python was first released in 1991.",true,none,https://en.wikipedia.org/wiki/Python_(programming_language)
+c048,en,it,"Python was first released in 2001.",false,date,https://en.wikipedia.org/wiki/Python_(programming_language)
+c049,en,it,"The Linux kernel was first released by Linus Torvalds in 1991.",true,none,https://en.wikipedia.org/wiki/Linux_kernel
+c050,en,it,"The Linux kernel was first released by Richard Stallman in 1991.",false,entity,https://en.wikipedia.org/wiki/Linux_kernel
+c051,ru,it,"В MITRE ATT&CK техника Kerberoasting имеет идентификатор T1558.003.",true,none,https://attack.mitre.org/techniques/T1558/003/
+c052,ru,it,"В MITRE ATT&CK техника Kerberoasting имеет идентификатор T1003.001.",false,entity,https://attack.mitre.org/techniques/T1558/003/
+c053,en,it,"HTTP status code 404 means Not Found.",true,none,https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+c054,en,it,"HTTP status code 404 means Internal Server Error.",false,entity,https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+c055,ru,ai,"По данным Tow Center (2025), ИИ-поисковики не смогли найти правильную информацию более чем в 60% запросов.",true,none,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+c056,ru,ai,"По данным Tow Center (2025), ИИ-поисковики не смогли найти правильную информацию в 40% запросов.",false,number,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+c057,ru,ai,"В исследовании Tow Center (2025) Grok 3 ошибся в 94% запросов.",true,none,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+c058,ru,ai,"В исследовании Tow Center (2025) Grok 3 ошибся в 64% запросов.",false,number,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+c059,ru,ai,"В исследовании Tow Center (2025) Perplexity ошибался в 37% случаев.",true,none,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+c060,ru,ai,"В исследовании Tow Center (2025) Perplexity ошибался в 17% случаев.",false,number,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+c061,ru,ai,"Tow Center в 2025 году протестировал восемь ИИ-поисковиков.",true,none,https://www.cjr.org/tow_center/we-compared-eight-ai-search-engines-theyre-all-bad-at-citing-news.php
+c062,ru,ai,"Tow Center в 2025 году протестировал двенадцать ИИ-поисковиков.",false,number,https://www.cjr.org/tow_center/we-compared-eight-ai-search-engines-theyre-all-bad-at-citing-news.php
+c063,en,ai,"In the Tow Center tests, ChatGPT used hedging language in only 15 of its 134 incorrect citations.",true,none,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+c064,en,ai,"In the Tow Center tests, ChatGPT used hedging language in 95 of its 134 incorrect citations.",false,number,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+c065,ru,ai,"По данным Walters и Wilder (2023), выдуманными оказались 55% ссылок GPT-3.5 и 18% ссылок GPT-4.",true,none,https://doi.org/10.1038/s41598-023-41032-5
+c066,ru,ai,"По данным Walters и Wilder (2023), выдуманными оказались 55% ссылок GPT-4 и 18% ссылок GPT-3.5.",false,swap,https://doi.org/10.1038/s41598-023-41032-5
+c067,en,ai,"GPTZero reported fabricated citations in at least 53 papers accepted at NeurIPS 2025.",true,none,https://fortune.com/2026/01/21/neurips-ai-conferences-research-papers-hallucinations/
+c068,en,ai,"GPTZero reported fabricated citations in more than 500 papers accepted at NeurIPS 2025.",false,number,https://fortune.com/2026/01/21/neurips-ai-conferences-research-papers-hallucinations/
+c069,en,ai,"ChatGPT was publicly released on November 30, 2022.",true,none,https://en.wikipedia.org/wiki/ChatGPT
+c070,en,ai,"ChatGPT was publicly released on November 30, 2021.",false,date,https://en.wikipedia.org/wiki/ChatGPT
+c071,en,history,"Apollo 11 made the first crewed Moon landing in July 1969.",true,none,https://en.wikipedia.org/wiki/Apollo_11
+c072,en,history,"Apollo 11 made the first crewed Moon landing in July 1972.",false,date,https://en.wikipedia.org/wiki/Apollo_11
+c073,ru,history,"Вторая мировая война закончилась в 1945 году.",true,none,https://ru.wikipedia.org/wiki/Вторая_мировая_война
+c074,ru,history,"Вторая мировая война закончилась в 1948 году.",false,date,https://ru.wikipedia.org/wiki/Вторая_мировая_война
+c075,ru,science,"Менделеев сформулировал периодический закон в 1869 году.",true,none,https://ru.wikipedia.org/wiki/Периодический_закон
+c076,ru,science,"Менделеев сформулировал периодический закон в 1899 году.",false,date,https://ru.wikipedia.org/wiki/Периодический_закон
+c077,en,science,"The chemical symbol for gold is Au.",true,none,https://en.wikipedia.org/wiki/Gold
+c078,en,science,"The chemical symbol for gold is Ag.",false,entity,https://en.wikipedia.org/wiki/Gold
+c079,ru,geo,"Килиманджаро — самая высокая гора Африки.",true,none,https://ru.wikipedia.org/wiki/Килиманджаро
+c080,ru,geo,"Гора Кения — самая высокая гора Африки.",false,entity,https://ru.wikipedia.org/wiki/Килиманджаро
+c081,ru,geo,"Тихий океан — крупнейший океан Земли.",true,none,https://ru.wikipedia.org/wiki/Тихий_океан
+c082,ru,geo,"Атлантический океан — крупнейший океан Земли.",false,entity,https://ru.wikipedia.org/wiki/Тихий_океан
+c083,ru,science,"Азот составляет около 78% атмосферы Земли по объёму.",true,none,https://ru.wikipedia.org/wiki/Атмосфера_Земли
+c084,ru,science,"Кислород составляет около 78% атмосферы Земли по объёму.",false,swap,https://ru.wikipedia.org/wiki/Атмосфера_Земли
+c085,ru,geo,"Столица Австралии — Канберра.",true,none,https://ru.wikipedia.org/wiki/Канберра
+c086,ru,geo,"Столица Австралии — Сидней.",false,entity,https://ru.wikipedia.org/wiki/Канберра
+c087,ru,econ,"Наличные евро были введены в обращение в 2002 году.",true,none,https://ru.wikipedia.org/wiki/Евро
+c088,ru,econ,"Наличные евро были введены в обращение в 1995 году.",false,date,https://ru.wikipedia.org/wiki/Евро
+c089,en,sport,"The 2024 Summer Olympics were held in Paris.",true,none,https://en.wikipedia.org/wiki/2024_Summer_Olympics
+c090,en,sport,"The 2024 Summer Olympics were held in Tokyo.",false,entity,https://en.wikipedia.org/wiki/2024_Summer_Olympics
+c091,ru,culture,"«Мону Лизу» написал Леонардо да Винчи.",true,none,https://ru.wikipedia.org/wiki/Мона_Лиза
+c092,ru,culture,"«Мону Лизу» написал Микеланджело.",false,entity,https://ru.wikipedia.org/wiki/Мона_Лиза
+c093,en,medicine,"Insulin was discovered by Banting and Best in 1921.",true,none,https://en.wikipedia.org/wiki/Insulin
+c094,en,medicine,"Insulin was discovered by Banting and Best in 1951.",false,date,https://en.wikipedia.org/wiki/Insulin
+c095,ru,medicine,"Пенициллин открыл Александр Флеминг в 1928 году.",true,none,https://ru.wikipedia.org/wiki/Пенициллин
+c096,ru,medicine,"Пенициллин открыл Луи Пастер в 1928 году.",false,entity,https://ru.wikipedia.org/wiki/Пенициллин
+c097,ru,science,"Скорость звука в воздухе при 20 °C составляет около 343 м/с.",true,none,https://ru.wikipedia.org/wiki/Скорость_звука
+c098,ru,science,"Скорость звука в воздухе при 20 °C составляет около 543 м/с.",false,number,https://ru.wikipedia.org/wiki/Скорость_звука
+c099,ru,ai,"Walters и Wilder проанализировали 636 библиографических ссылок из 84 работ, сгенерированных ChatGPT.",true,none,https://doi.org/10.1038/s41598-023-41032-5
+c100,ru,ai,"Walters и Wilder доказали, что все ссылки, которые генерирует ChatGPT, выдуманы.",false,overclaim,https://doi.org/10.1038/s41598-023-41032-5

@@ -1,0 +1,61 @@
+id,lang,topic,claim,label,mutation,difficulty,source_url
+h001,ru,kz,"Бывшая столица Казахстана уступила этот статус Акмоле в конце 1997 года.",true,paraphrase,hard,https://ru.wikipedia.org/wiki/Астана
+h002,ru,kz,"Первый в истории полёт человека в космос стартовал с территории нынешнего Казахстана.",true,paraphrase,hard,https://ru.wikipedia.org/wiki/Восток-1
+h003,en,kz,"Kazakhstan's national currency replaced the ruble in late 1993.",true,paraphrase,medium,https://en.wikipedia.org/wiki/Kazakhstani_tenge
+h004,ru,kz,"Среди всех государств без выхода к Мировому океану наибольшая территория у Казахстана.",true,paraphrase,medium,https://ru.wikipedia.org/wiki/Казахстан
+h005,ru,science,"Свет в вакууме проходит примерно 300 тысяч километров за секунду.",true,units,medium,https://ru.wikipedia.org/wiki/Скорость_света
+h006,en,science,"At sea-level pressure, water boils at roughly 212 degrees Fahrenheit.",true,units,hard,https://en.wikipedia.org/wiki/Boiling_point
+h007,ru,geo,"По измерениям 2020 года высота Эвереста чуть меньше 8,85 километра.",true,units,hard,https://ru.wikipedia.org/wiki/Джомолунгма
+h008,ru,it,"Архитектура, на которой построены модели GPT, была предложена исследователями Google в 2017 году.",true,paraphrase,hard,https://en.wikipedia.org/wiki/Attention_Is_All_You_Need
+h009,en,ai,"In the Tow Center study, the worst-performing AI search tool got nearly all of its answers wrong.",true,paraphrase,hard,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+h010,ru,ai,"По данным Walters и Wilder, GPT-4 выдумывал библиографические ссылки примерно втрое реже, чем GPT-3.5.",true,paraphrase,hard,https://doi.org/10.1038/s41598-023-41032-5
+h011,ru,ai,"Исследователи Tow Center задали ИИ-поисковикам в сумме 1600 запросов.",true,paraphrase,medium,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+h012,ru,kz,"Абай Кунанбаев родился в первой половине XIX века.",true,paraphrase,hard,https://ru.wikipedia.org/wiki/Абай_Кунанбаев
+h013,en,kz,"Kazakhstan was the last Soviet republic to declare independence.",true,paraphrase,hard,https://en.wikipedia.org/wiki/Independence_Day_(Kazakhstan)
+h014,ru,kz,"Семипалатинский полигон закрыли ещё до распада СССР.",true,paraphrase,hard,https://ru.wikipedia.org/wiki/Семипалатинский_испытательный_полигон
+h015,ru,kz,"Столица Казахстана носила название Нур-Султан меньше четырёх лет.",true,paraphrase,hard,https://ru.wikipedia.org/wiki/Астана
+h016,en,it,"The Linux kernel was created by a Finnish student.",true,paraphrase,medium,https://en.wikipedia.org/wiki/Linus_Torvalds
+h017,ru,medicine,"Пенициллин был открыт в период между двумя мировыми войнами.",true,paraphrase,hard,https://ru.wikipedia.org/wiki/Пенициллин
+h018,en,medicine,"Insulin was discovered in Canada.",true,paraphrase,medium,https://en.wikipedia.org/wiki/Insulin
+h019,ru,science,"Азота в атмосфере Земли примерно в 3,7 раза больше, чем кислорода.",true,units,hard,https://ru.wikipedia.org/wiki/Атмосфера_Земли
+h020,ru,kz,"Kaspi.kz начал торговаться на американской бирже в начале 2024 года.",true,paraphrase,medium,https://en.wikipedia.org/wiki/Kaspi.kz
+h021,ru,ai,"По данным Tow Center, ИИ-поисковики ошибались примерно в половине запросов.",false,near_number,hard,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+h022,en,ai,"In the Tow Center tests, Perplexity had the highest failure rate.",false,swap,hard,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+h023,ru,ai,"Walters и Wilder изучали ссылки, сгенерированные только моделью GPT-4.",false,partial,hard,https://doi.org/10.1038/s41598-023-41032-5
+h024,ru,ai,"По данным Walters и Wilder, у GPT-3.5 и GPT-4 выдуманными оказались одинаковые 55% ссылок.",false,near_number,hard,https://doi.org/10.1038/s41598-023-41032-5
+h025,ru,geo,"По измерениям 2020 года высота Эвереста превышает 8,9 километра.",false,units,hard,https://ru.wikipedia.org/wiki/Джомолунгма
+h026,ru,kz,"Казахстан провозгласил независимость раньше всех остальных союзных республик.",false,order,hard,https://ru.wikipedia.org/wiki/День_Независимости_Казахстана
+h027,en,kz,"The Semipalatinsk test site was closed after the collapse of the Soviet Union.",false,order,hard,https://en.wikipedia.org/wiki/Semipalatinsk_Test_Site
+h028,ru,it,"Архитектура Transformer была предложена в 2017 году исследователями OpenAI.",false,attribution,hard,https://en.wikipedia.org/wiki/Attention_Is_All_You_Need
+h029,en,medicine,"Insulin was discovered in the United Kingdom.",false,entity,medium,https://en.wikipedia.org/wiki/Insulin
+h030,ru,medicine,"Пенициллин был открыт уже после Второй мировой войны.",false,order,medium,https://ru.wikipedia.org/wiki/Пенициллин
+h031,ru,kz,"Космодром Байконур расположен в пригороде Алматы.",false,entity,medium,https://ru.wikipedia.org/wiki/Байконур
+h032,ru,kz,"Kaspi.kz начал торговаться на американской бирже в начале 2022 года.",false,date,medium,https://en.wikipedia.org/wiki/Kaspi.kz
+h033,ru,science,"Азот и кислород занимают в атмосфере Земли примерно равные доли.",false,near_number,medium,https://ru.wikipedia.org/wiki/Атмосфера_Земли
+h034,en,kz,"Kazakhstan is the largest country in Central Asia and the second-largest landlocked country in the world.",false,partial,hard,https://en.wikipedia.org/wiki/Kazakhstan
+h035,ru,ai,"В исследовании Tow Center Grok 3 показал лучший результат среди всех ИИ-поисковиков.",false,swap,medium,https://www.niemanlab.org/2025/03/ai-search-engines-fail-to-produce-accurate-citations-in-over-60-of-tests-according-to-new-tow-center-study/
+h036,ru,science,"Свет в вакууме проходит примерно 3 тысячи километров за секунду.",false,units,medium,https://ru.wikipedia.org/wiki/Скорость_света
+h037,ru,kz,"Абай Кунанбаев родился во второй половине XIX века.",false,paraphrase,hard,https://ru.wikipedia.org/wiki/Абай_Кунанбаев
+h038,en,ai,"ChatGPT was released before the Transformer architecture was introduced.",false,order,hard,https://en.wikipedia.org/wiki/ChatGPT
+h039,ru,kz,"Столица Казахстана носила название Нур-Султан больше десяти лет.",false,near_number,medium,https://ru.wikipedia.org/wiki/Астана
+h040,en,it,"The Linux kernel was created by an American university professor.",false,entity,medium,https://en.wikipedia.org/wiki/Linus_Torvalds
+h041,ru,kz,"По данным опроса КБТУ 2023 года, 64% студентов ежедневно используют ChatGPT для учёбы.",unsupported,fabricated_stat,hard,
+h042,ru,kz,"В 2024 году Министерство науки и высшего образования РК обязало все вузы проверять дипломные работы на выдуманные ИИ источники.",unsupported,fabricated_event,hard,
+h043,en,edu,"A 2023 Stanford study found that 41% of students who use AI tools fail to verify at least one citation.",unsupported,fabricated_study,hard,
+h044,ru,kz,"В Казахстане 27% выпускных работ 2024 года содержали хотя бы один выдуманный источник.",unsupported,fabricated_stat,hard,
+h045,ru,kz,"По оценке Всемирного банка, к 2030 году ИИ добавит 12% к ВВП Казахстана.",unsupported,fabricated_stat,hard,
+h046,ru,kz,"Исследование Назарбаев Университета показало, что ChatGPT ошибается в 38% вопросов по истории Казахстана.",unsupported,fabricated_study,hard,
+h047,ru,kz,"По данным Kaspi.kz, ИИ-ассистентом в его приложении ежемесячно пользуются 3 миллиона человек.",unsupported,fabricated_stat,hard,
+h048,en,edu,"According to UNESCO, 70% of teachers in Central Asia use AI to grade essays.",unsupported,fabricated_stat,hard,
+h049,ru,kz,"В среднем студент КБТУ тратит 4,5 часа в неделю на проверку источников.",unsupported,fabricated_stat,hard,
+h050,ru,edu,"Согласно отчёту ОЭСР 2024 года, казахстанские школьники заняли первое место в Центральной Азии по цифровой грамотности.",unsupported,fabricated_study,hard,
+h051,ru,kz,"Более 40% научных статей казахстанских авторов в 2023 году были частично написаны ИИ.",unsupported,fabricated_stat,hard,
+h052,ru,ai,"Tow Center также выяснил, что ИИ-поисковики чаще ошибаются на русском языке, чем на английском.",unsupported,fabricated_extension,hard,
+h053,en,ai,"Walters and Wilder also tested Google Gemini in their 2023 study.",unsupported,fabricated_extension,hard,
+h054,ru,ai,"После публикации исследования Tow Center доля ошибок Grok 3 снизилась до 12%.",unsupported,fabricated_stat,hard,
+h055,ru,medicine,"По данным ВОЗ, 15% медицинских советов ChatGPT опасны для здоровья.",unsupported,fabricated_stat,hard,
+h056,en,ai,"GPTZero found fabricated citations in 12% of all papers submitted to ICLR 2026.",unsupported,distorted_stat,hard,
+h057,ru,kz,"Средняя зарплата IT-специалиста в Алматы в 2024 году составила ровно 1 200 000 тенге.",unsupported,fabricated_stat,hard,
+h058,ru,ai,"Каждый третий ответ ChatGPT на русском языке содержит хотя бы одну ошибку в датах.",unsupported,fabricated_stat,hard,
+h059,en,ai,"Researchers at MIT showed that AI fact-checkers reduce the spread of misinformation by 58%.",unsupported,fabricated_study,hard,
+h060,ru,edu,"По данным Минпросвещения РК, 9 из 10 школьников используют ИИ при выполнении домашних заданий.",unsupported,fabricated_stat,hard,

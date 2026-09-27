@@ -1,0 +1,16 @@
+{
+  "judge_model": "gemini-3.7-flash",
+  "extract_model": "gemini-3.5-flash-lite",
+  "search": "tavily",
+  "refs": {
+    "n": 72,
+    "coverage": "65/72 (90%)",
+    "accuracy_decided": "63/65 (97%)",
+    "fake_caught": "17/23 (74%)",
+    "distorted_caught": "15/15 (100%)",
+    "distorted_flagged_any": "15/15 (100%)",
+    "FALSE_ACCUSATIONS_real_called_fake": "0/34 (0%)",
+    "real_called_distorted": "2/34 (6%)",
+    "avg_seconds": 3.2
+  }
+}

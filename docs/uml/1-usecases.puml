@@ -1,0 +1,35 @@
+@startuml usecases
+title Пруф — что умеет (Use Case)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+actor "Студент / школьник" as S
+actor "Преподаватель,\nнаучный руководитель" as T
+actor "Жюри / любой\nполучатель ссылки" as J
+
+rectangle "Пруф" {
+  usecase "Проверить ответ ИИ\n(вставить текст)" as UC1
+  usecase "Проверить работу целиком\n(.docx / .pdf / .txt / .md)" as UC2
+  usecase "Увидеть вердикт по каждому\nутверждению + дословную цитату" as UC3
+  usecase "Найти выдуманные\nи искажённые источники" as UC4
+  usecase "Проверить утверждения без источника\n(поиск подтверждений И опровержений)" as UC5
+  usecase "Получить реальную замену\nвыдуманной ссылки (ГОСТ / APA)" as UC6
+  usecase "Счёт «Достоверность источников: N из M»" as UC7
+  usecase "Поделиться отчётом по ссылке /r/<id>" as UC8
+  usecase "Скачать PDF-отчёт с QR-кодом" as UC9
+}
+S --> UC1
+S --> UC2
+T --> UC2
+T --> UC9
+J --> UC8
+UC1 ..> UC3 : <<include>>
+UC1 ..> UC4 : <<include>>
+UC1 ..> UC5 : <<include>>
+UC2 ..> UC4 : <<include>>
+UC2 ..> UC7 : <<include>>
+UC2 ..> UC3 : <<include>>
+UC4 ..> UC6 : <<extend>>
+UC3 ..> UC8 : <<extend>>
+UC7 ..> UC9 : <<extend>>
+@enduml
