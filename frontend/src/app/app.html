@@ -1,9 +1,34 @@
+<svg class="svg-defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".16" stop-color="#d9cbff"/><stop offset=".3" stop-color="#5a3cc2"/>
+      <stop offset=".38" stop-color="#b9a3f7"/><stop offset=".48" stop-color="#ffe3f6"/><stop offset=".56" stop-color="#ffffff"/>
+      <stop offset=".64" stop-color="#8e74ea"/><stop offset=".74" stop-color="#34207a"/><stop offset=".84" stop-color="#c7b4ff"/><stop offset="1" stop-color="#f7f0ff"/>
+    </linearGradient>
+    <linearGradient id="irid" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff9ad5" stop-opacity=".35"/><stop offset=".5" stop-color="#8fd3ff" stop-opacity="0"/><stop offset="1" stop-color="#b58cff" stop-opacity=".35"/>
+    </linearGradient>
+    <filter id="gloss" x="-40%" y="-40%" width="180%" height="190%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="b"/>
+      <feSpecularLighting in="b" surfaceScale="14" specularConstant="1.4" specularExponent="42" lighting-color="#ffffff" result="s"><fePointLight x="60" y="-160" z="240"/></feSpecularLighting>
+      <feComposite in="s" in2="SourceAlpha" operator="in" result="si"/>
+      <feSpecularLighting in="b" surfaceScale="10" specularConstant=".7" specularExponent="18" lighting-color="#ffd6f2" result="s2"><fePointLight x="420" y="460" z="160"/></feSpecularLighting>
+      <feComposite in="s2" in2="SourceAlpha" operator="in" result="si2"/>
+      <feComposite in="SourceGraphic" in2="si" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="o1"/>
+      <feComposite in="o1" in2="si2" operator="arithmetic" k1="0" k2="1" k3=".8" k4="0" result="o"/>
+      <feDropShadow dx="0" dy="22" stdDeviation="18" flood-color="#6d4fd0" flood-opacity=".22"/>
+    </filter>
+    <path id="p-splat" d="M252.5 200.0C252.4 202.0 253.0 203.4 257.3 205.6C261.5 207.8 269.2 210.1 278.2 213.4C287.2 216.7 300.8 220.7 311.2 225.2C321.6 229.8 334.2 235.2 340.5 240.5C346.7 245.8 350.6 252.3 348.7 257.0C346.8 261.7 338.6 266.9 329.0 268.8C319.4 270.7 303.6 270.3 291.3 268.3C279.0 266.3 264.9 260.5 255.4 256.8C245.8 253.1 239.0 248.2 234.2 246.3C229.3 244.4 228.0 244.4 226.2 245.5C224.5 246.6 223.7 247.6 223.5 252.9C223.3 258.2 224.9 266.8 225.0 277.4C225.1 287.9 225.9 303.6 224.3 316.1C222.6 328.6 219.4 343.9 215.2 352.4C211.0 360.9 204.3 367.2 199.0 367.1C193.7 367.1 187.2 360.7 183.2 352.2C179.2 343.7 176.4 328.4 174.9 315.9C173.5 303.4 174.5 287.8 174.8 277.3C175.0 266.8 176.6 258.2 176.4 252.9C176.3 247.6 175.6 246.3 173.8 245.5C171.9 244.6 170.7 244.6 165.1 247.8C159.5 250.9 151.4 258.1 140.0 264.4C128.7 270.8 111.9 280.7 97.1 285.9C82.4 291.1 63.3 295.5 51.4 295.5C39.6 295.5 28.9 291.4 26.1 285.9C23.3 280.4 27.3 270.7 34.8 262.5C42.3 254.3 58.0 244.2 71.1 236.6C84.2 229.0 101.9 222.0 113.6 216.9C125.3 211.8 135.5 208.8 141.1 206.0C146.8 203.2 147.2 202.1 147.5 200.0C147.8 197.9 146.9 196.8 142.8 193.6C138.7 190.4 130.9 187.0 122.8 180.6C114.8 174.3 102.5 165.1 94.4 155.5C86.3 146.0 77.8 132.6 74.4 123.5C71.1 114.3 71.3 104.6 74.4 100.5C77.5 96.4 85.2 96.4 93.1 99.0C101.0 101.7 112.3 109.8 121.6 116.4C130.9 123.1 141.5 132.8 149.0 139.0C156.5 145.1 162.3 150.6 166.5 153.2C170.6 155.8 172.2 155.5 173.7 154.5C175.3 153.6 176.4 152.4 176.0 147.5C175.6 142.6 173.5 134.6 171.3 125.0C169.1 115.3 164.9 101.2 162.7 89.8C160.5 78.3 157.5 64.5 158.2 56.2C158.9 47.9 161.9 40.9 167.1 40.0C172.2 39.1 181.7 43.3 189.0 50.6C196.3 58.0 205.4 72.2 210.7 84.1C216.1 96.1 218.9 111.9 220.9 122.4C222.9 132.9 222.1 141.7 223.0 147.0C223.9 152.4 224.4 153.6 226.2 154.5C228.1 155.5 229.4 155.7 233.9 152.9C238.4 150.1 244.8 144.2 253.2 137.9C261.6 131.5 273.7 121.5 284.3 115.0C294.9 108.4 308.1 100.7 317.0 98.5C325.9 96.2 334.4 97.0 337.5 101.4C340.6 105.9 339.9 115.8 335.6 125.0C331.2 134.2 320.9 147.3 311.6 156.6C302.3 165.9 288.6 174.8 279.6 181.0C270.6 187.2 262.2 190.5 257.7 193.7C253.1 196.8 252.6 198.0 252.5 200.0Z"/>
+    <path id="p-drop" d="M323.8 88.1C325.9 91.6 320.1 99.5 312.2 108.8C304.4 118.1 289.1 132.1 276.7 143.8C264.4 155.5 249.5 168.5 238.3 179.0C227.1 189.5 217.6 198.6 209.5 206.7C201.4 214.9 195.7 221.7 189.9 227.9C184.0 234.1 179.2 239.5 174.4 243.8C169.6 248.1 165.4 251.1 161.0 253.7C156.6 256.3 152.7 257.9 148.3 259.2C143.9 260.6 139.2 261.5 134.6 261.8C130.0 262.2 125.3 262.0 120.8 261.3C116.2 260.6 111.6 259.4 107.3 257.7C103.1 256.0 98.9 253.8 95.1 251.2C91.3 248.6 87.7 245.5 84.6 242.2C81.4 238.8 78.6 235.0 76.3 231.0C74.0 227.0 72.1 222.7 70.8 218.3C69.4 213.9 68.5 209.2 68.2 204.6C67.8 200.0 68.0 195.3 68.7 190.8C69.4 186.2 70.6 181.6 72.3 177.3C74.0 173.1 76.2 168.9 78.8 165.1C81.4 161.3 84.5 157.7 87.8 154.6C91.2 151.4 94.6 148.8 99.0 146.3C103.4 143.8 108.2 141.7 114.3 139.7C120.4 137.6 127.5 136.2 135.8 134.2C144.1 132.2 152.8 130.7 163.9 127.8C175.0 124.9 187.6 121.1 202.3 116.7C217.0 112.2 235.8 105.9 252.1 101.0C268.4 96.2 288.2 89.9 300.1 87.8C312.1 85.6 321.8 84.6 323.8 88.1Z"/>
+  </defs>
+</svg>
+
 <header class="topbar">
   <a class="brand" href="/" (click)="$event.preventDefault(); reset()">
     <span class="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="#1c1b19"/>
-        <path d="M11.5 12.2a4.6 4.6 0 1 1 6.4 4.2c-1.3.6-1.9 1.4-1.9 2.8v.8" stroke="#ffe27a" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <circle cx="16" cy="24.3" r="1.9" fill="#ffe27a"/></svg>
+      <svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="#2a1245"/>
+        <path d="M11.5 12.2a4.6 4.6 0 1 1 6.4 4.2c-1.3.6-1.9 1.4-1.9 2.8v.8" stroke="#cdb8ff" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="16" cy="24.3" r="1.9" fill="#cdb8ff"/></svg>
     </span>
     <span class="brand-name">Trustable<span class="brand-q">?</span></span>
   </a>
@@ -17,15 +42,13 @@
 
 @if (view() === 'input') {
   <main class="intro">
+    <div class="chrome-bg" aria-hidden="true">
+      <svg class="chrome c-splat" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
+      <svg class="chrome c-drop" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-drop" fill="url(#chrome)"/><use href="#p-drop" fill="url(#irid)"/></g></svg>
+      <svg class="chrome c-dot1" viewBox="0 0 140 140" aria-hidden="true"><g filter="url(#gloss)"><circle cx="70" cy="70" r="36" fill="url(#chrome)"/></g></svg>
+      <svg class="chrome c-dot2" viewBox="0 0 140 140" aria-hidden="true"><g filter="url(#gloss)"><circle cx="70" cy="70" r="36" fill="url(#chrome)"/></g></svg>
+    </div>
     <section class="hero">
-      <svg class="doodles" viewBox="0 0 1120 560" preserveAspectRatio="none" aria-hidden="true">
-        <path class="dd" d="M40 520c30-10 60 8 90-2s60-12 90 0"/>
-        <path class="dd" d="M1030 60q10-22 30-10t-6 30q-14 10-10 26"/><circle class="dd-fill" cx="1053" cy="122" r="3"/>
-        <path class="dd" d="M470 36l10 10 20-24"/>
-        <path class="dd" d="M990 470c-8-8-4-22 8-22s14 16 4 22c14 0 16 20 0 22"/>
-        <path class="dd" d="M12 120q6-20 22-8M22 132q6-20 22-8"/>
-        <circle class="dd" cx="640" cy="530" r="10"/><path class="dd" d="M647 537l12 12"/>
-      </svg>
       <div class="hero-copy">
         <h1>Этому тексту <span class="marker">можно верить?</span></h1>
         <p class="lede">
@@ -218,6 +241,7 @@
     </section>
 
     <section class="cta">
+      <svg class="chrome c-cta" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
       <h2>Прежде чем поверить — проверьте.</h2>
       <p>Вставьте текст или загрузите документ. Первые утверждения загорятся через несколько секунд.</p>
       <button class="primary" type="button" (click)="scrollToId('check')">Проверить текст</button>
@@ -578,9 +602,9 @@
     <div class="sf-brand">
       <a class="brand" href="/" (click)="$event.preventDefault(); reset()">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32" width="26" height="26"><rect width="32" height="32" rx="8" fill="#1c1b19"/>
-            <path d="M11.5 12.2a4.6 4.6 0 1 1 6.4 4.2c-1.3.6-1.9 1.4-1.9 2.8v.8" stroke="#ffe27a" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <circle cx="16" cy="24.3" r="1.9" fill="#ffe27a"/></svg>
+          <svg viewBox="0 0 32 32" width="26" height="26"><rect width="32" height="32" rx="8" fill="#2a1245"/>
+            <path d="M11.5 12.2a4.6 4.6 0 1 1 6.4 4.2c-1.3.6-1.9 1.4-1.9 2.8v.8" stroke="#cdb8ff" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="16" cy="24.3" r="1.9" fill="#cdb8ff"/></svg>
         </span>
         <span class="brand-name">Trustable<span class="brand-q">?</span></span>
       </a>
