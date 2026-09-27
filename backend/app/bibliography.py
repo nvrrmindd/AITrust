@@ -24,7 +24,7 @@ from .models import Citation, Claim, ClaimResult, SourceCheck
 from .pipeline import run, summarize
 from .replacements import find_replacements
 from .sources import SourceText, check_citation
-from .textutil import certainty, clean_doi, find_dois, find_urls
+from .textutil import certainty, clean_doi, find_dois, find_urls, locate
 
 log = logging.getLogger("pruf.bibliography")
 
@@ -230,6 +230,60 @@ def cited_claims(body: str, cits: list[Citation], limit: int = MAX_CLAIMS) -> li
     return claims
 
 
+# ---------------------------------------------------------------- 2b. documents without a reference list
+
+SELECTED_NOTICE = ("В документе нет списка литературы, поэтому проверяем утверждения о фактах и числах из всего текста. "
+                   "Титульный лист, личные данные, даты и обязанности не проверяем: их нельзя сверить с открытыми источниками.")
+NOTHING_CHECKABLE = ("В документе не нашлось утверждений, которые можно сверить с открытыми источниками: только личные данные, "
+                     "даты, обязанности и описание работы. Такие сведения Trustable? не проверяет.")
+_FACT_CUES = re.compile(
+    r"по данным|согласно|исследован|статистик|составля|составил|насчитыва|достиг|увеличил|сократил|вырос|снизил|"
+    r"крупнейш|млн|млрд|тыс\.|процент|%|\bв \d{4} год|закон|кодекс|постановлени|указ\b|according|percent|million|billion",
+    re.I)
+_PERSONAL = re.compile(
+    r"\b(я|мной|мною|мне|меня|мой|моя|мои|моей|моих|мы|нами|нам|нас|наш|наша|наши)\b|практик|обязанност|руководител|"
+    r"студент\w* групп|ф\.?\s?и\.?\s?о|выполнил|ознакомил|изучил|приняла? участие|подпись|отч[её]т|дневник|"
+    r"цел[ьи] (работы|практики)|задач[аи] (работы|практики)|кафедр|факультет|специальност|курса\b",
+    re.I)
+_TOC_LINE = re.compile(r"(\.{3,}|…)\s*\d{1,3}\s*$|^\s*\d+(\.\d+)*\.?\s+[А-ЯЁA-Z][^.!?]{0,80}\s+\d{1,3}\s*$", re.M)
+
+
+def _looks_like_report(text: str) -> bool:
+    """Title page / internship-report boilerplate at the start: select sentences even for short documents."""
+    head = text[:1500]
+    return len(_PERSONAL.findall(head)) >= 3
+
+
+def _sentence_score(s: str) -> int:
+    if _TOC_LINE.search(s) or len(s) < 40 or s.isupper():
+        return -10
+    score = 0
+    if re.search(r"\d", s):
+        score += 2
+    score += 2 * min(len(_FACT_CUES.findall(s)), 2)
+    if len(re.findall(r"(?<=\s)[A-ZА-ЯЁ][\w\-]{2,}", s)) >= 2:
+        score += 1
+    score -= 4 * min(len(_PERSONAL.findall(s)), 2)
+    return score
+
+
+def checkable_text(text: str, budget: int) -> str:
+    """The most checkable sentences of the whole document, in document order, within `budget` characters."""
+    spans = []
+    for a, b in _sentences_with_offsets(text):
+        sent = text[a:b].strip()
+        sc = _sentence_score(sent)
+        if sc >= 2:
+            spans.append((sc, a, sent))
+    chosen, used = [], 0
+    for sc, a, sent in sorted(spans, key=lambda x: (-x[0], x[1])):
+        if used + len(sent) + 2 > budget:
+            continue
+        chosen.append((a, sent))
+        used += len(sent) + 2
+    return "\n\n".join(sent for _, sent in sorted(chosen))
+
+
 # ---------------------------------------------------------------- 3. orchestration
 
 def score(checks: list[SourceCheck], total: int) -> dict:
@@ -249,12 +303,19 @@ async def run_document(text: str, filename: str) -> AsyncIterator[dict]:
            "checked_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
     found = find_bibliography(text)
     if not found:
-        # no reference list: check the document like any other text (claims + search for support and refutation)
-        part = text[: settings.max_text_chars]
-        if len(part) < len(text):
-            yield {"type": "notice", "message": f"Списка литературы в документе нет, а текст длинный: проверены первые "
-                                                f"{len(part):,} символов из {len(text):,}.".replace(",", " ")}
+        # no reference list: pick the checkable factual sentences from the WHOLE document (not the title page),
+        # check them like any text, and map the highlights back onto the full document
+        part = text if len(text) <= settings.max_text_chars and not _looks_like_report(text) else checkable_text(text, settings.max_text_chars)
+        if not part.strip():
+            yield {"type": "notice", "message": NOTHING_CHECKABLE}
+            yield {"type": "done", "summary": summarize([], [], [], started).model_dump()}
+            return
+        if part is not text:
+            yield {"type": "notice", "message": SELECTED_NOTICE}
         async for ev in run(part):
+            if ev["type"] == "extracted" and part is not text:
+                for c in ev["claims"]:
+                    c["start"], c["end"] = locate(c.get("span") or c["text"], text)
             yield ev
         return
     body, bib = found

@@ -340,13 +340,14 @@ def test_title_similarity_subtitle_is_same_work():
 
 def test_llm_switches_model_when_daily_quota_is_gone(monkeypatch):
     from app.config import settings
+    monkeypatch.setattr(settings, "llm_provider", "openai")
     monkeypatch.setattr(settings, "llm_model_judge", "m-a,m-b")
     monkeypatch.setattr(settings, "llm_api_key", "k")
     monkeypatch.setattr(llm, "_exhausted", set())
     used = []
-    async def fake_call(system, user, max_tokens, model, role):
-        used.append(model)
-        if model == "m-a":
+    async def fake_call(system, user, max_tokens, ep, role):
+        used.append(ep.model)
+        if ep.model == "m-a":
             raise llm.RateLimited("429 GenerateRequestsPerDayPerProjectPerModel-FreeTier", 30, daily=True)
         return '{"verdict": "supports"}'
     monkeypatch.setattr(llm, "_openai_compatible", fake_call)
@@ -354,6 +355,38 @@ def test_llm_switches_model_when_daily_quota_is_gone(monkeypatch):
     assert used == ["m-a", "m-b"] and asyncio.run(llm.complete_json("s", "u")) and used[-1] == "m-b"
 
 
+def test_llm_falls_back_across_providers(monkeypatch):
+    from app.config import settings
+    monkeypatch.setattr(settings, "llm_provider", "gemini")
+    monkeypatch.setattr(settings, "gemini_api_key", "g-key")
+    monkeypatch.setattr(settings, "groq_api_key", "q-key")
+    monkeypatch.setattr(settings, "llm_model_judge", "gemini:g-1,groq:openai/gpt-oss-120b,openrouter:x")
+    monkeypatch.setattr(llm, "_exhausted", set())
+    chain = llm.endpoints_for("judge")
+    assert [(e.provider, e.key) for e in chain] == [("gemini", "g-key"), ("groq", "q-key")]  # openrouter has no key
+    assert "groq.com" in chain[1].base_url
+    seen = []
+    async def fake_call(system, user, max_tokens, ep, role):
+        seen.append(ep.name)
+        if ep.provider == "gemini":
+            raise llm.RateLimited("quota PerDay", 30, daily=True)
+        return '{"ok": true}'
+    monkeypatch.setattr(llm, "_openai_compatible", fake_call)
+    assert asyncio.run(llm.complete_json("s", "u")) == {"ok": True}
+    assert seen == ["gemini:g-1", "groq:openai/gpt-oss-120b"]
+
+
 def test_citation_markers_are_not_precise_numbers():
     tone, markers = certainty("Студенты в 3 раза чаще сдают работы с несуществующими источниками [4].")
     assert tone == "assertive" and markers == ["точное число 3"]
+
+
+def test_attribution_without_url_doi_year_is_not_a_citation(monkeypatch):
+    from app import extract as ex
+    text = "По данным Бюро национальной статистики, ВВП Казахстана вырос на 6,5% в 2025 году."
+    async def fake(system, user, max_tokens=0, role="judge"):
+        return {"citations": [{"id": "S1", "raw": "Бюро национальной статистики", "kind": "other"}],
+                "claims": [{"span": "ВВП Казахстана вырос на 6,5% в 2025 году", "text": "ВВП вырос на 6,5%", "citation_ids": ["S1"]}]}
+    monkeypatch.setattr(llm, "complete_json", fake)
+    claims, cits = asyncio.run(ex.extract(text))
+    assert cits == [] and claims[0].citation_ids == [] and claims[0].queries  # goes to web search instead

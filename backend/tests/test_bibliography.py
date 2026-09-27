@@ -195,12 +195,39 @@ def test_document_without_reference_list_is_checked_as_text(monkeypatch):
         yield {"type": "done", "summary": {}}
 
     monkeypatch.setattr(bibliography, "run", fake_run)
-    monkeypatch.setattr(settings, "max_text_chars", 50)
-    text = "Эссе без списка литературы. " * 10
+    monkeypatch.setattr(settings, "max_text_chars", 200)
 
-    async def collect():
+    async def collect(text):
         return [ev async for ev in bibliography.run_document(text, "essay.docx")]
 
-    evs = asyncio.run(collect())
+    facts = "По данным статистики, население страны составляет 20 миллионов человек. " * 6
+    evs = asyncio.run(collect(facts))
     assert [e["type"] for e in evs] == ["document", "notice", "done"]
-    assert seen["text"] == text[:50]
+    assert "20 миллионов" in seen["text"] and len(seen["text"]) <= 200
+
+    seen.clear()
+    evs = asyncio.run(collect("Я прошёл практику в отделе. Мои обязанности были разными. " * 3))
+    assert [e["type"] for e in evs] == ["document", "notice", "done"] and not seen  # nothing checkable, no LLM call
+
+
+REPORT = """ОТЧЁТ ПО ПРОИЗВОДСТВЕННОЙ ПРАКТИКЕ
+Студент группы ИС-21 Иванов Иван Иванович
+Руководитель практики: Петров П. П.
+Сроки практики: с 1 июля 2026 по 28 июля 2026 года.
+Мои обязанности на практике включали работу с базой данных и подготовку отчётов для руководителя отдела.
+Я ознакомился со структурой организации и изучил регламенты работы отдела продаж.
+
+1. Общие сведения об отрасли
+По данным Бюро национальной статистики, в 2025 году ВВП Казахстана вырос на 6,5%.
+Население Казахстана превышает 20 миллионов человек, а столицей с 1997 года является Астана.
+Банковский сектор страны насчитывает 21 банк второго уровня согласно данным Национального банка.
+"""
+
+
+def test_report_without_references_skips_title_page_and_personal_facts():
+    from app.bibliography import _looks_like_report, checkable_text
+    assert _looks_like_report(REPORT)
+    part = checkable_text(REPORT, 2000)
+    assert "ВВП Казахстана вырос на 6,5%" in part and "21 банк" in part and "20 миллионов" in part
+    for personal in ("Иванов", "Сроки практики", "обязанности", "ознакомился", "Руководитель"):
+        assert personal not in part

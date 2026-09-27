@@ -25,6 +25,8 @@ def _env(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
 
 
+PROVIDERS = ("openai", "groq", "openrouter", "anthropic", "gemini")
+
 _DEFAULT_MODELS = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-haiku-4-5",
@@ -32,7 +34,7 @@ _DEFAULT_MODELS = {
     "openrouter": "openai/gpt-4o-mini",
     "gemini": "gemini-3.7-flash",
 }
-_DEFAULT_BASE = {
+DEFAULT_BASE = _DEFAULT_BASE = {
     "openai": "https://api.openai.com/v1",
     "groq": "https://api.groq.com/openai/v1",
     "openrouter": "https://openrouter.ai/api/v1",
@@ -51,6 +53,7 @@ class Settings:
     llm_model_extract: str = field(default_factory=lambda: _env("LLM_MODEL_EXTRACT"))
     llm_model_judge: str = field(default_factory=lambda: _env("LLM_MODEL_JUDGE"))
     gemini_api_key: str = field(default_factory=lambda: _env("GEMINI_API_KEY"))
+    groq_api_key: str = field(default_factory=lambda: _env("GROQ_API_KEY"))
     tavily_api_key: str = field(default_factory=lambda: _env("TAVILY_API_KEY"))
     # free key from openalex.org: anonymous search gets paused under load
     openalex_api_key: str = field(default_factory=lambda: _env("OPENALEX_API_KEY"))
@@ -65,6 +68,8 @@ class Settings:
     http_timeout: float = field(default_factory=lambda: float(_env("HTTP_TIMEOUT", "12")))
 
     def __post_init__(self) -> None:
+        if not self.groq_api_key and self.llm_provider == "groq":
+            self.groq_api_key = self.llm_api_key
         if self.llm_provider == "gemini" and self.gemini_api_key:
             self.llm_api_key = self.gemini_api_key  # LLM_API_KEY may still hold another provider's key
         if not self.llm_model:
@@ -77,6 +82,14 @@ class Settings:
             self.llm_base_url = _DEFAULT_BASE.get(self.llm_provider, _DEFAULT_BASE["openai"])
         (self.data_dir / "cache").mkdir(parents=True, exist_ok=True)
         (self.data_dir / "reports").mkdir(parents=True, exist_ok=True)
+
+    def key_for(self, provider: str) -> str:
+        """API key for any provider of a fallback chain (Gemini and Groq have their own variables)."""
+        if provider == "gemini":
+            return self.gemini_api_key or (self.llm_api_key if self.llm_provider == "gemini" else "")
+        if provider == "groq":
+            return self.groq_api_key or (self.llm_api_key if self.llm_provider == "groq" else "")
+        return self.llm_api_key if provider == self.llm_provider else ""
 
     @property
     def user_agent(self) -> str:

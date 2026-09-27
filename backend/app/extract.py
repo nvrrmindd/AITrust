@@ -18,6 +18,11 @@ def _as_int(v: Any) -> int | None:
         return None
 
 
+def _year_in(text: str) -> int | None:
+    m = re.search(r"\b(19[5-9]\d|20[0-4]\d)\b", text)
+    return int(m.group(1)) if m else None
+
+
 def _norm_citation(raw: dict, idx: int) -> Citation:
     url = (raw.get("url") or "").strip() or None
     doi = (raw.get("doi") or "").strip() or None
@@ -39,7 +44,7 @@ def _norm_citation(raw: dict, idx: int) -> Citation:
         doi=doi,
         title=(raw.get("title") or None),
         authors=[str(a) for a in authors][:12],
-        year=_as_int(raw.get("year")),
+        year=_as_int(raw.get("year")) or _year_in(str(raw.get("raw") or "")),
         venue=raw.get("venue") or None,
     )
 
@@ -98,6 +103,9 @@ async def extract(text: str) -> tuple[list[Claim], list[Citation]]:
     data = await llm.complete_json(system, f"Ответ ИИ:\n<<<\n{text}\n>>>", max_tokens=4000, role="extract")
 
     citations = [_norm_citation(c, i + 1) for i, c in enumerate(data.get("citations") or [])]
+    # "по данным Бюро национальной статистики" is an attribution, not a findable work: no URL, no DOI, no year.
+    # Such claims are checked by web search (attack mode) instead of a registry lookup that can only fail.
+    citations = [c for c in citations if c.url or c.doi or c.year]
     ids = {c.id for c in citations}
 
     # safety net: every URL / DOI literally present in the text must become a citation
