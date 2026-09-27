@@ -2,9 +2,10 @@
   <a class="brand" href="/" (click)="$event.preventDefault(); reset()">
     <span class="brand-mark" aria-hidden="true">
       <svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="#1c1b19"/>
-        <path d="M9 16.5l4.5 4.5L23 11" stroke="#ffe27a" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <path d="M11.5 12.2a4.6 4.6 0 1 1 6.4 4.2c-1.3.6-1.9 1.4-1.9 2.8v.8" stroke="#ffe27a" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="16" cy="24.3" r="1.9" fill="#ffe27a"/></svg>
     </span>
-    <span class="brand-name">Пруф</span>
+    <span class="brand-name">Trustable<span class="brand-q">?</span></span>
   </a>
   <nav class="topnav">
     @if (view() === 'result') {
@@ -16,81 +17,175 @@
 
 @if (view() === 'input') {
   <main class="intro">
-    <section class="intro-copy">
-      <p class="eyebrow">«А пруфы есть?» — теперь это можно спросить у ИИ</p>
-      <h1>Ответ ИИ выглядит убедительно. Покажем, <span class="marker">что написано в&nbsp;его источниках</span>.</h1>
-      <p class="lede">
-        Вставьте ответ ChatGPT, Gemini или Claude — или загрузите курсовую целиком. Пруф проверит, существуют ли источники,
-        говорят ли они то, что им приписали, и сходятся ли цифры. Каждый вывод — с дословной цитатой, которую можно открыть.
-      </p>
+    <section class="hero">
+      <div class="hero-copy">
+        <h1>Этому тексту <span class="marker">можно верить?</span></h1>
+        <p class="lede">
+          Trustable? находит в тексте каждое утверждение, открывает источник и показывает, что там написано на самом деле, —
+          дословной цитатой. Подходит для любого текста: ответа нейросети, статьи, новости, реферата, курсовой.
+        </p>
+        <ul class="hero-points">
+          <li><span class="hp-mark" aria-hidden="true">✓</span>Существует ли источник, проверяют мировые реестры публикаций, а не нейросеть</li>
+          <li><span class="hp-mark" aria-hidden="true">✓</span>Цифры сравнивает код: 40% и 60% — не одно и то же</li>
+          <li><span class="hp-mark" aria-hidden="true">✓</span>Нет источника — ищем и подтверждения, и опровержения</li>
+        </ul>
+        <button class="primary" type="button" (click)="scrollToId('check')">Проверить текст</button>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="art-doc">
+          <div class="art-dots"><span></span><span></span><span></span></div>
+          <p>
+            Нейросети регулярно ошибаются в ссылках: <span class="art-mark m-green">GPT-4 выдумывает 18% источников</span>.
+            ИИ-поисковики <span class="art-mark m-orange">ошибаются в 40% запросов</span>, а в Казахстане
+            <span class="art-mark m-red">68% студентов не проверяют ссылки (Ахметова, 2024)</span>.
+          </p>
+        </div>
+        <div class="art-card art-a">
+          <span class="pill small tone-orange">Источник говорит другое</span>
+          <div class="art-nums"><s>40%</s><span>→</span><b>60%</b></div>
+          <p class="art-quote">«…failed to retrieve the correct information more than <mark>60%</mark> of the time»</p>
+          <span class="art-ok">✓ цитата найдена дословно</span>
+        </div>
+        <div class="art-card art-b">
+          <span class="pill small tone-red">Источник не существует</span>
+          <p>DOI не зарегистрирован в реестре doi.org</p>
+        </div>
+        <div class="art-card art-c">
+          <span class="pill small tone-green">Подтверждено цитатой</span>
+        </div>
+      </div>
     </section>
 
-    <div class="tabs" role="tablist" aria-label="Что проверяем">
-      <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'answer'" [attr.aria-selected]="mode() === 'answer'"
-        (click)="mode.set('answer'); error.set(null)">Ответ ИИ</button>
-      <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'file'" [attr.aria-selected]="mode() === 'file'"
-        (click)="mode.set('file'); error.set(null)">Работа целиком</button>
-    </div>
+    <section id="check" class="check">
+      <h2 class="section-title">Что проверяем?</h2>
+      <div class="tabs" role="tablist" aria-label="Что проверяем">
+        <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'answer'" [attr.aria-selected]="mode() === 'answer'"
+          (click)="mode.set('answer'); error.set(null)">Текст</button>
+        <button type="button" role="tab" class="tab" [class.is-active]="mode() === 'file'" [attr.aria-selected]="mode() === 'file'"
+          (click)="mode.set('file'); error.set(null)">Документ со списком литературы</button>
+      </div>
 
-    @if (mode() === 'file') {
-    <section class="composer" aria-label="Проверка работы перед сдачей">
-      <label class="dropzone" [class.is-drag]="dragging()" [class.is-busy]="uploading()"
-        (dragover)="$event.preventDefault(); dragging.set(true)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
-        <input type="file" [accept]="FILE_FORMATS" (change)="onPick($event)" [disabled]="uploading()">
-        <span class="dz-title">{{ uploading() ? 'Загружаю…' : 'Перетащите файл курсовой или диплома сюда' }}</span>
-        <span class="dz-sub">или нажмите, чтобы выбрать · .docx, .pdf, .txt, .md · до 10 МБ</span>
-      </label>
-      <p class="hint">Проверим каждый источник из списка литературы и утверждения со ссылками на них ([1], [2, с. 15], (Иванов, 2020)).</p>
-      <div class="composer-foot">
-        <button class="ghost" type="button" (click)="runSample()" [disabled]="uploading()">Попробовать на примере курсовой (DOCX)</button>
-      </div>
-      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-    </section>
-    } @else {
-    <section class="composer" aria-label="Проверка ответа">
-      <label for="answer" class="composer-label">Ответ ИИ</label>
-      <textarea id="answer" rows="10" [ngModel]="input()" (ngModelChange)="input.set($event)"
-        placeholder="Вставьте сюда ответ целиком, вместе со списком источников, если он есть"></textarea>
-      <div class="composer-foot">
-        <span class="hint">{{ input().length }} / 12 000 символов</span>
-        <button class="primary" type="button" (click)="run()" [disabled]="input().trim().length < 20">Проверить ответ</button>
-      </div>
-      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-      @if (searchProvider() === 'wikipedia') {
-        <p class="notice">Веб-поиск не подключён: утверждения без источников проверяются только по Википедии.</p>
+      @if (mode() === 'file') {
+      <section class="composer" aria-label="Проверка документа">
+        <label class="dropzone" [class.is-drag]="dragging()" [class.is-busy]="uploading()"
+          (dragover)="$event.preventDefault(); dragging.set(true)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
+          <input type="file" [accept]="FILE_FORMATS" (change)="onPick($event)" [disabled]="uploading()">
+          <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h17l9 9v27a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M29 6v9h9"/><path d="M17 24h14M17 30h14M17 36h8"/></svg>
+          <span class="dz-title">{{ uploading() ? 'Загружаю…' : 'Перетащите документ сюда' }}</span>
+          <span class="dz-sub">курсовая, диплом, статья, реферат, отчёт · .docx, .pdf, .txt, .md · до 10 МБ</span>
+          <span class="dz-pick">или выберите файл</span>
+        </label>
+        <p class="hint">Проверим каждый источник из списка литературы и утверждения в тексте, которые на них ссылаются: [1], [2, с. 15], (Иванов, 2020).</p>
+        <div class="composer-foot">
+          <button class="ghost" type="button" (click)="runSample()" [disabled]="uploading()">Попробовать на примере (DOCX)</button>
+        </div>
+        @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+      </section>
+      } @else {
+      <section class="composer" aria-label="Проверка текста">
+        <label for="answer" class="composer-label">Текст для проверки</label>
+        <textarea id="answer" rows="10" [ngModel]="input()" (ngModelChange)="input.set($event)"
+          placeholder="Вставьте любой текст: ответ нейросети, статью, новость, абзац из реферата. Если у текста есть список источников — вставьте и его."></textarea>
+        <div class="composer-foot">
+          <span class="hint">{{ input().length }} / 12 000 символов</span>
+          <button class="primary" type="button" (click)="run()" [disabled]="input().trim().length < 20">Проверить</button>
+        </div>
+        @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+        @if (searchProvider() === 'wikipedia') {
+          <p class="notice">Веб-поиск не подключён: утверждения без источников проверяются только по Википедии.</p>
+        }
+      </section>
+      }
+
+      @if (mode() === 'answer' && examples().length) {
+        <section class="examples" aria-label="Примеры">
+          <h3>Или посмотрите на примерах</h3>
+          <div class="example-list">
+            @for (e of examples(); track e.id) {
+              <button type="button" class="example" (click)="useExample(e)">
+                <span class="example-title">{{ e.title }}</span>
+                <span class="example-sub">{{ e.subtitle }}</span>
+              </button>
+            }
+          </div>
+        </section>
       }
     </section>
-    }
 
-    @if (mode() === 'answer' && examples().length) {
-      <section class="examples" aria-label="Примеры">
-        <h2>Или возьмите готовый ответ</h2>
-        <div class="example-list">
-          @for (e of examples(); track e.id) {
-            <button type="button" class="example" (click)="useExample(e)">
-              <span class="example-title">{{ e.title }}</span>
-              <span class="example-sub">{{ e.subtitle }}</span>
-            </button>
-          }
+    <section class="who-checks">
+      <h2 class="section-title">Кто на самом деле проверяет</h2>
+      <p class="section-sub">Нейросеть у нас не выносит приговор. Она только находит в источнике нужное место. Решают реестры и код.</p>
+      <div class="checker-grid">
+        <div class="checker">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="6" width="26" height="28" rx="3"/><path d="M13 14h14M13 20h14M13 26h8"/><circle cx="29" cy="29" r="6" class="fill-marker"/><path d="M26.5 29l2 2 3.5-4"/></svg>
+          <h3>Мировые реестры публикаций</h3>
+          <p>doi.org, Crossref, OpenAlex — сотни миллионов научных работ. Нет в реестрах — значит, ссылку выдумали.</p>
         </div>
-      </section>
-    }
+        <div class="checker">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="8" width="30" height="24" rx="3"/><path d="M5 14h30"/><circle cx="9" cy="11" r=".8"/><circle cx="12" cy="11" r=".8"/><path d="M11 20h12M11 25h18" /><rect x="10" y="18.5" width="9" height="3" class="fill-marker" stroke="none"/></svg>
+          <h3>Сам источник</h3>
+          <p>Открываем страницу, PDF или аннотацию статьи и читаем, что там написано. Закрыт пейволом — честно пишем «нет доступа».</p>
+        </div>
+        <div class="checker">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 12h10v10H8zM22 12h10v10H22z"/><path d="M18 22c0 5-3 8-7 9M32 22c0 5-3 8-7 9"/><path d="M14 34l3 3 6-6" class="stroke-green"/></svg>
+          <h3>Сверка цитаты кодом</h3>
+          <p>Цитата, которую принесла нейросеть, должна дословно найтись в источнике. Не нашлась — вердикт выбрасывается.</p>
+        </div>
+        <div class="checker">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><text x="5" y="19" class="svg-num">40%</text><text x="21" y="33" class="svg-num">60%</text><path d="M5 16l14-5" class="stroke-red"/><path d="M8 26h8M12 22v8" /></svg>
+          <h3>Сравнение чисел</h3>
+          <p>Числа из текста и из источника сравниваются автоматически. Подменённую цифру видно сразу.</p>
+        </div>
+        <div class="checker">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="17" cy="17" r="10"/><path d="M24.5 24.5L34 34"/><path d="M12 17h10"/></svg>
+          <h3>Поиск опровержений</h3>
+          <p>Если источник не указан, ищем в интернете не только подтверждения, но и опровержения. Надёжные сайты весят больше.</p>
+        </div>
+        <div class="checker">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 5l12 5v9c0 8-5 13-12 16C13 32 8 27 8 19v-9z"/><path d="M15 20l4 4 7-8" class="stroke-green"/></svg>
+          <h3>Лучше «не знаю», чем ложь</h3>
+          <p>Не смогли проверить — так и пишем. На 34 настоящих источниках мы ни разу не назвали настоящий источник выдуманным.</p>
+        </div>
+      </div>
+    </section>
 
-    <section class="how-strip" aria-label="Что проверяется">
-      <div class="feature">
-        <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v5h5M9 14l2 2 4-4"/></svg></span>
-        <h3>Источник существует?</h3>
-        <p>DOI сверяем с мировым реестром, статьи — с Crossref и OpenAlex, ссылки — открываем. Без участия нейросети.</p>
-      </div>
-      <div class="feature">
-        <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h4v4H7zM13 7h4v4h-4z"/><path d="M11 11c0 3-2 5-4 6M17 11c0 3-2 5-4 6"/></svg></span>
-        <h3>Он говорит именно это?</h3>
-        <p>Читаем текст источника и ищем место, где сказано то же самое. Показываем цитату дословно.</p>
-      </div>
-      <div class="feature">
-        <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2M8.5 11h5"/></svg></span>
-        <h3>Источника нет?</h3>
-        <p>Ищем не только подтверждения, но и опровержения: другую цифру, устаревшие данные, противоположный вывод.</p>
+    <section class="steps">
+      <h2 class="section-title">Как это работает</h2>
+      <ol class="step-list">
+        <li class="step">
+          <svg viewBox="0 0 120 80" aria-hidden="true"><rect x="20" y="8" width="80" height="64" rx="6"/><path d="M32 24h56M32 36h40M32 48h52M32 60h28"/><rect x="31" y="32" width="42" height="8" rx="2" class="fill-marker" stroke="none"/><path d="M32 36h40"/></svg>
+          <h3>1. Находим утверждения</h3>
+          <p>Факты, числа, даты и ссылки на источники — отдельно каждое.</p>
+        </li>
+        <li class="step">
+          <svg viewBox="0 0 120 80" aria-hidden="true"><rect x="14" y="14" width="44" height="56" rx="4"/><path d="M22 28h28M22 38h28M22 48h18"/><circle cx="78" cy="38" r="16"/><path d="M89 50l12 12"/><path d="M71 38l5 5 9-10" class="stroke-green"/></svg>
+          <h3>2. Открываем источники</h3>
+          <p>Проверяем, существует ли каждый, и читаем, что в нём написано.</p>
+        </li>
+        <li class="step">
+          <svg viewBox="0 0 120 80" aria-hidden="true"><path d="M16 14h88a4 4 0 0 1 4 4v36a4 4 0 0 1-4 4H48l-14 12V58H16a4 4 0 0 1-4-4V18a4 4 0 0 1 4-4z"/><path d="M26 28h46M26 40h58"/><rect x="54" y="35" width="18" height="9" rx="2" class="fill-marker" stroke="none"/><path d="M26 40h58"/></svg>
+          <h3>3. Показываем доказательство</h3>
+          <p>Вердикт, объяснение и дословная цитата со ссылкой — проверить нас можно за пять секунд.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="audience">
+      <h2 class="section-title">Кому пригодится</h2>
+      <div class="audience-grid">
+        <div class="aud">
+          <h3>Студентам и школьникам</h3>
+          <p>Проверить реферат, эссе или курсовую до сдачи — и заменить выдуманную ссылку на настоящую работу в формате ГОСТ или APA.</p>
+        </div>
+        <div class="aud">
+          <h3>Преподавателям</h3>
+          <p>Загрузить работу и за минуту увидеть, сколько источников настоящие. PDF-отчёт с QR-кодом — к проверке.</p>
+        </div>
+        <div class="aud">
+          <h3>Всем, кто читает</h3>
+          <p>Проверить ответ нейросети, статью или пост перед тем, как поверить или поделиться.</p>
+        </div>
       </div>
     </section>
   </main>
@@ -101,7 +196,7 @@
     @if (doc(); as d) {
       <section class="print-only print-meta">
         <div>
-          <p class="pm-brand">Пруф — проверка источников</p>
+          <p class="pm-brand">Trustable? — проверка по источникам</p>
           <p><b>Файл:</b> {{ d.filename }}</p>
           <p><b>Дата проверки:</b> {{ checkedAt(d.checked_at) }}</p>
           <p><b>Отчёт:</b> {{ reportUrl() }}</p>
@@ -210,7 +305,7 @@
     <div class="workspace">
       <article class="doc" aria-label="Текст с разметкой">
         <div class="doc-head">
-          <h2>{{ doc() ? 'Утверждения со ссылками в тексте работы' : 'Ответ ИИ' }}</h2>
+          <h2>{{ doc() ? 'Утверждения со ссылками в тексте работы' : 'Текст' }}</h2>
           <span class="doc-hint">Нажмите на подсвеченное утверждение</span>
         </div>
         <div class="doc-body">
@@ -239,7 +334,7 @@
           <div class="card tone-{{ VERDICT[v].tone }}">
             <div class="card-verdict">
               <span class="pill tone-{{ VERDICT[v].tone }}">{{ v === 'unverifiable' && r?.mode === 'attack' ? 'Не подтверждено: доказательств не нашли' : VERDICT[v].label }}</span>
-              @if (r?.mode === 'attack') { <span class="mode">ИИ не дал источник — искали сами</span> }
+              @if (r?.mode === 'attack') { <span class="mode">Источник не указан — искали сами</span> }
             </div>
             <p class="claim-text">{{ sel.claim.text }}</p>
 
@@ -250,7 +345,7 @@
 
               @if (r.numbers?.mismatch) {
                 <div class="numbers">
-                  <div><span class="n-label">В ответе ИИ</span><span class="n-val bad">{{ r.numbers!.claim_numbers.join(', ') }}</span></div>
+                  <div><span class="n-label">В тексте</span><span class="n-val bad">{{ r.numbers!.claim_numbers.join(', ') }}</span></div>
                   <div><span class="n-label">В источнике</span><span class="n-val good">{{ r.numbers!.source_numbers.slice(0, 4).join(', ') }}</span></div>
                 </div>
               }
@@ -277,7 +372,7 @@
               @for (cid of sel.claim.citation_ids; track cid) {
                 @let chk = checks()[cid];
                 <div class="src-line">
-                  <span class="src-title">Ссылка в ответе: {{ citationLabel(cid) }}</span>
+                  <span class="src-title">Ссылка в тексте: {{ citationLabel(cid) }}</span>
                   @if (chk) {
                     <span class="pill small tone-{{ SOURCE_STATUS[chk.status].tone }}">{{ SOURCE_STATUS[chk.status].label }}</span>
                     <span class="src-detail">{{ chk.detail }}</span>
@@ -301,7 +396,7 @@
                 </ul>
               }
               @if (sel.claim.certainty === 'assertive' && r.verdict !== 'supported') {
-                <p class="tone-warning">ИИ сформулировал это уверенно{{ sel.claim.certainty_markers.length ? ' (' + sel.claim.certainty_markers.join(', ') + ')' : '' }}, но доказательств нет.</p>
+                <p class="tone-warning">Это сказано уверенно{{ sel.claim.certainty_markers.length ? ' (' + sel.claim.certainty_markers.join(', ') + ')' : '' }}, но доказательств нет.</p>
               }
             }
           </div>
@@ -315,7 +410,7 @@
 
     @if (citations().length && !doc()) {
       <section class="panel sources">
-        <h2>Источники из ответа</h2>
+        <h2>Источники из текста</h2>
         <ul class="source-list">
           @for (c of sortedCitations(); track c.id) {
             @let chk = checks()[c.id];
@@ -432,7 +527,7 @@
         <li><b>Разбор.</b> Языковая модель делит ответ на проверяемые утверждения и находит, на какой источник ссылается каждое.</li>
         <li><b>Существование источника — без нейросети.</b> DOI проверяется в мировом реестре doi.org, научные работы — в Crossref и OpenAlex, ссылки — прямым запросом. Пейвол или защита от ботов — это «нет доступа», а не «фейк».</li>
         <li><b>Чтение источника.</b> Скачиваем текст страницы или открытый PDF статьи и выбираем самые релевантные фрагменты (BM25 + совпадение чисел).</li>
-        <li><b>Вердикт с цитатой.</b> Модель-судья обязана привести дословную цитату. Код ищет её в тексте источника: не нашлась — вердикт отбрасывается. Так мы проверяем собственный ИИ.</li>
+        <li><b>Вердикт с цитатой.</b> Модель-судья обязана привести дословную цитату. Код ищет её в тексте источника: не нашлась — вердикт отбрасывается. Так мы проверяем собственную нейросеть.</li>
         <li><b>Цифры — детерминированно.</b> Числа из утверждения сравниваются с числами из источника без участия модели.</li>
         <li><b>Нет источника — атакуем.</b> Ищем не только подтверждения, но и опровержения, и показываем найденное цитатами.</li>
       </ol>

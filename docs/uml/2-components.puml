@@ -1,5 +1,5 @@
 @startuml components
-title Пруф — архитектура (компоненты)
+title Trustable? — архитектура (компоненты)
 skinparam shadowing false
 skinparam componentStyle rectangle
 skinparam component {

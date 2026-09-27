@@ -80,7 +80,7 @@ class Settings:
     @property
     def user_agent(self) -> str:
         # Crossref/OpenAlex "polite pool" asks for a contact address.
-        return f"PrufFactCheck/1.0 (+mailto:{self.contact_email})"
+        return f"TrustableFactCheck/1.0 (+mailto:{self.contact_email})"
 
 
 settings = Settings()

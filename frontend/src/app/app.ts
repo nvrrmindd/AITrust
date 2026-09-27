@@ -237,6 +237,10 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  scrollToId(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   printReport() {
     window.print();
   }

@@ -20,7 +20,7 @@ from .pipeline import PIPELINE_VERSION
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
-app = FastAPI(title="Пруф API", version=PIPELINE_VERSION)
+app = FastAPI(title="Trustable? API", version=PIPELINE_VERSION)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 EXAMPLES_FILE = Path(__file__).resolve().parent.parent / "examples.json"

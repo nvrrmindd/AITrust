@@ -1,5 +1,5 @@
 @startuml usecases
-title Пруф — что умеет (Use Case)
+title Trustable? — что умеет (Use Case)
 left to right direction
 skinparam packageStyle rectangle
 skinparam shadowing false
@@ -7,7 +7,7 @@ actor "Студент / школьник" as S
 actor "Преподаватель,\nнаучный руководитель" as T
 actor "Жюри / любой\nполучатель ссылки" as J
 
-rectangle "Пруф" {
+rectangle "Trustable?" {
   usecase "Проверить ответ ИИ\n(вставить текст)" as UC1
   usecase "Проверить работу целиком\n(.docx / .pdf / .txt / .md)" as UC2
   usecase "Увидеть вердикт по каждому\nутверждению + дословную цитату" as UC3

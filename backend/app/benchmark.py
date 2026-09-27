@@ -1,4 +1,4 @@
-"""Accuracy benchmark: how often does Пруф get it right, and — most importantly — how often does it
+"""Accuracy benchmark: how often does Trustable? get it right, and — most importantly — how often does it
 falsely accuse a REAL source of being fake?
 
 Layout (fill it in as a team, see benchmark/README.md):

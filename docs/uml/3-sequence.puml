@@ -1,5 +1,5 @@
 @startuml sequence
-title Пруф — как проверяется одно утверждение («ИИ не судит ИИ»)
+title Trustable? — как проверяется одно утверждение («ИИ не судит ИИ»)
 skinparam shadowing false
 autonumber
 actor Пользователь as U
