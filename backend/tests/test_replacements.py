@@ -46,7 +46,7 @@ CIT = Citation(id="S2", kind="academic", title="Students and AI citations", auth
 CLAIM = Claim(id="C2", text="74% студентов не проверяют источники, которые приводит ИИ", citation_ids=["S2"])
 
 
-async def fake_judge(system, user, max_tokens=0):
+async def fake_judge(system, user, max_tokens=0, role="judge"):
     if "Do students check" in user:
         return {"verdict": "supports", "quote": "74% of students never check AI citations before using them", "reason": "ok"}
     # a "quote" that is not in the abstract must not produce a confirmation

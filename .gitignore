@@ -7,3 +7,4 @@ frontend/node_modules/
 frontend/.angular/
 benchmark/results.json
 .venv/
+benchmark/eval_cache/

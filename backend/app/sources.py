@@ -23,6 +23,7 @@ from .models import Citation, MatchedRecord, SourceCheck
 from .textutil import normalize
 
 log = logging.getLogger("pruf.sources")
+logging.getLogger("pypdf").setLevel(logging.ERROR)  # font-encoding chatter on journal PDFs
 
 CROSSREF = "https://api.crossref.org/works"
 OPENALEX = "https://api.openalex.org/works"
@@ -40,10 +41,21 @@ class SourceText:
 
 # ------------------------------------------------------------------ helpers
 
+def _bare_title(t: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", normalize(t))).strip()
+
+
 def title_similarity(a: Optional[str], b: Optional[str]) -> int:
     if not a or not b:
         return 0
-    return int(fuzz.token_sort_ratio(normalize(a), normalize(b)))
+    na, nb = _bare_title(a), _bare_title(b)
+    short, long_ = sorted((na, nb), key=len)
+    if len(short) >= 20 and long_.startswith(short):
+        return 100  # subtitle dropped or added: same work
+    main_a, main_b = (_bare_title(re.split(r"[:?.]|\s[-–—]\s", t, maxsplit=1)[0]) for t in (a, b))
+    if min(len(main_a), len(main_b)) >= 20 and main_a == main_b:
+        return 90  # same main title, the subtitle differs
+    return int(fuzz.token_sort_ratio(na, nb))
 
 
 def _surname(author: str) -> str:
@@ -222,22 +234,32 @@ async def _openalex_doi(doi: str) -> Optional[dict]:
     return data if status == 200 else None
 
 
+async def _get_json_retry(url: str, params: dict, tries: int = 3) -> Optional[dict]:
+    """Title search is what decides "this paper does not exist", so a busy API must not make us give up:
+    retry 429/5xx/timeouts with a short backoff. None = the database really did not answer."""
+    for i in range(tries):
+        try:
+            status, data = await netsafe.get_json(url, params)
+            if status == 200 and data is not None:
+                return data
+            if status not in (429, 500, 502, 503, 504):
+                return None
+        except httpx.HTTPError:
+            pass
+        await asyncio.sleep(1.5 * (i + 1))
+    return None
+
+
 async def _search_crossref(cit: Citation) -> Optional[list[dict]]:
     q = cit.raw or " ".join(filter(None, [cit.title, " ".join(cit.authors), str(cit.year or ""), cit.venue]))
-    try:
-        status, data = await netsafe.get_json(CROSSREF, {"query.bibliographic": q[:400], "rows": 5})
-    except httpx.HTTPError:
-        return None
-    return (data or {}).get("message", {}).get("items", []) if status == 200 else None
+    data = await _get_json_retry(CROSSREF, {"query.bibliographic": q[:400], "rows": 5})
+    return data.get("message", {}).get("items", []) if data is not None else None
 
 
 async def _search_openalex(cit: Citation) -> Optional[list[dict]]:
     q = cit.title or cit.raw
-    try:
-        status, data = await netsafe.get_json(OPENALEX, {"search": q[:300], "per-page": 5})
-    except httpx.HTTPError:
-        return None
-    return (data or {}).get("results", []) if status == 200 else None
+    data = await _get_json_retry(OPENALEX, {"search": q[:300], "per-page": 5})
+    return data.get("results", []) if data is not None else None
 
 
 async def _openalex_fulltext(w: dict) -> Optional[SourceText]:

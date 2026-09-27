@@ -138,7 +138,7 @@ SOURCE = ("The Tow Center tested eight generative search tools. Collectively, th
 
 
 def _patch_llm(monkeypatch, out):
-    async def fake(system, user, max_tokens=0):
+    async def fake(system, user, max_tokens=0, role="judge"):
         return out
     monkeypatch.setattr(llm, "complete_json", fake)
 
@@ -242,7 +242,7 @@ def test_extract_fixes_duplicate_ids_and_links_by_markers(monkeypatch):
             "Walters и Wilder (2023) выяснили, что 55% ссылок GPT-3.5 выдуманы [2].\n\n"
             "[1] https://www.niemanlab.org/2025/03/study/\n"
             "[2] Walters (2023). https://doi.org/10.1038/s41598-023-41032-5")
-    async def fake(system, user, max_tokens=0):
+    async def fake(system, user, max_tokens=0, role="judge"):
         # niemanlab missing from the LLM output: the URL safety net adds it, it must still become S1
         return {"citations": [{"id": "S2", "url": "https://doi.org/10.1038/s41598-023-41032-5"},
                               {"id": "S2", "raw": "Walters duplicate"}],
@@ -314,3 +314,41 @@ def test_reordered_sentences_count_only_if_each_is_verbatim():
     assert quote_in_text("Meanwhile, Grok-3 Search had the highest failure rate at 94%. Perplexity had the lowest failure rate, "
                          "answering incorrectly 37% of the time.", src)
     assert not quote_in_text("Meanwhile, Grok-3 Search had the highest failure rate at 94%. Perplexity was always right.", src)
+
+
+def test_extract_numbers_reference_without_url_by_title(monkeypatch):
+    from app import extract as ex
+    text = ("Студенты с ChatGPT чаще сдают работы с выдуманными источниками [4].\n\n"
+            "[4] Johnson, M., & Patel, R. (2023). The illusion of accuracy: hallucinated references. Computers & Education, 195.")
+    async def fake(system, user, max_tokens=0, role="judge"):
+        return {"citations": [{"id": "4", "title": "The illusion of accuracy: hallucinated references",
+                               "raw": "Johnson, M., & Patel, R. (2023). The illusion of accuracy: hallucinated references."}],
+                "claims": [{"span": "Студенты с ChatGPT чаще сдают работы с выдуманными источниками", "text": "x", "citation_ids": ["4"]}]}
+    monkeypatch.setattr(llm, "complete_json", fake)
+    claims, cits = asyncio.run(ex.extract(text))
+    assert [c.id for c in cits] == ["S4"] and claims[0].citation_ids == ["S4"]
+
+
+def test_title_similarity_subtitle_is_same_work():
+    from app.sources import title_similarity
+    assert title_similarity("Molecular structure of nucleic acids",
+                            "Molecular Structure of Nucleic Acids: A Structure for Deoxyribose Nucleic Acid") >= 88
+    assert title_similarity("Programming Is Hard - Or at Least It Used to Be: Educational Opportunities and Challenges",
+                            "Programming Is Hard - Or at Least It Used to Be") >= 88
+    assert title_similarity("Deep learning for student performance prediction", "Deep learning") < 80
+
+
+def test_llm_switches_model_when_daily_quota_is_gone(monkeypatch):
+    from app.config import settings
+    monkeypatch.setattr(settings, "llm_model_judge", "m-a,m-b")
+    monkeypatch.setattr(settings, "llm_api_key", "k")
+    monkeypatch.setattr(llm, "_exhausted", set())
+    used = []
+    async def fake_call(system, user, max_tokens, model, role):
+        used.append(model)
+        if model == "m-a":
+            raise llm.RateLimited("429 GenerateRequestsPerDayPerProjectPerModel-FreeTier", 30, daily=True)
+        return '{"verdict": "supports"}'
+    monkeypatch.setattr(llm, "_openai_compatible", fake_call)
+    assert asyncio.run(llm.complete_json("s", "u"))["verdict"] == "supports"
+    assert used == ["m-a", "m-b"] and asyncio.run(llm.complete_json("s", "u")) and used[-1] == "m-b"

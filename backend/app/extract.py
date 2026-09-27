@@ -8,7 +8,7 @@ from . import llm
 from .config import settings
 from .models import Citation, Claim
 from .prompts import EXTRACT_SYSTEM
-from .textutil import certainty, clean_doi, find_dois, find_urls, locate
+from .textutil import certainty, clean_doi, find_dois, find_urls, locate, normalize
 
 
 def _as_int(v: Any) -> int | None:
@@ -66,9 +66,15 @@ def _renumber(citations: list[Citation], text: str) -> dict[str, str]:
     used: set[str] = set()
     old_to_new: dict[str, str] = {}
     pending: list[Citation] = []
+    def same(c: Citation, line: str) -> bool:
+        if (c.url and c.url.lower() in line) or (c.doi and c.doi.lower() in line):
+            return True
+        # no URL/DOI: match by title or by the start of the raw reference text
+        probes = [p for p in (c.title, c.raw[:60] if c.raw else None) if p and len(p) >= 15]
+        return any(normalize(p) in normalize(line) for p in probes)
+
     for c in citations:
-        n = next((n for n, line in refs.items()
-                  if f"S{n}" not in used and ((c.url and c.url.lower() in line) or (c.doi and c.doi.lower() in line))), None)
+        n = next((n for n, line in refs.items() if f"S{n}" not in used and same(c, line)), None)
         if n is None:
             pending.append(c)
             continue
@@ -77,7 +83,7 @@ def _renumber(citations: list[Citation], text: str) -> dict[str, str]:
         used.add(c.id)
     k = 0
     for c in pending:
-        new = c.id if c.id not in used else ""
+        new = c.id if c.id not in used and re.fullmatch(r"S\d+", c.id) else ""
         while not new:
             k += 1
             new = f"S{k}" if f"S{k}" not in used and k not in refs else ""
@@ -89,7 +95,7 @@ def _renumber(citations: list[Citation], text: str) -> dict[str, str]:
 
 async def extract(text: str) -> tuple[list[Claim], list[Citation]]:
     system = EXTRACT_SYSTEM.replace("{max_claims}", str(settings.max_claims))
-    data = await llm.complete_json(system, f"Ответ ИИ:\n<<<\n{text}\n>>>", max_tokens=4000)
+    data = await llm.complete_json(system, f"Ответ ИИ:\n<<<\n{text}\n>>>", max_tokens=4000, role="extract")
 
     citations = [_norm_citation(c, i + 1) for i, c in enumerate(data.get("citations") or [])]
     ids = {c.id for c in citations}

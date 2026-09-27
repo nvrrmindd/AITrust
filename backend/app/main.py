@@ -59,6 +59,8 @@ def health() -> dict:
         "version": PIPELINE_VERSION,
         "llm_configured": bool(settings.llm_api_key),
         "llm": f"{settings.llm_provider}:{settings.llm_model}",
+        "llm_extract": settings.llm_model_extract,
+        "llm_judge": settings.llm_model_judge,
         "search": "tavily" if settings.tavily_api_key else "wikipedia",
     }
 

@@ -20,7 +20,7 @@ PAGE = """<html><head><title>AI search has a citation problem</title></head><bod
 <p>Premium chatbots provided more confidently incorrect answers than their free counterparts. """ + "Filler text. " * 60 + "</p></article></body></html>"
 
 
-async def fake_llm(system, user, max_tokens=0):
+async def fake_llm(system, user, max_tokens=0, role="judge"):
     if "СТРУКТУРИРОВАТЬ" in system:
         return {
             "citations": [

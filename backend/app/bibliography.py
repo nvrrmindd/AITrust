@@ -113,7 +113,7 @@ def parse_reference(ref: Reference) -> tuple[Citation, bool]:
     if m := re.match(r"^(?P<auth>.+?)\s*\((?P<y>(?:19|20)\d{2})[a-z]?\)\.?\s*(?P<rest>.+)$", raw):
         # APA: Surname, I., & Surname, I. (2023). Title. Venue, 13, 1–10. https://doi.org/...
         authors = re.findall(r"([A-ZА-ЯЁ][\w'’\-]+),\s*(?:[A-ZА-ЯЁ]\.\s?)+", m.group("auth"))
-        parts = re.split(r"(?<=[.?!])\s+", m.group("rest"), maxsplit=1)
+        parts = re.split(r"(?<=\.)\s+", m.group("rest"), maxsplit=1)  # "?" inside a title does not end it
         title = parts[0].rstrip(".")
         if len(parts) > 1:
             venue = re.split(r",\s*\d|\.\s|https?://", parts[1])[0].strip(" .,") or None
@@ -159,7 +159,7 @@ async def parse_all(refs: list[Reference]) -> list[Citation]:
     if unclear:
         block = "\n".join(f"{r.n}. {r.raw}" for r in unclear)
         try:
-            out = await llm.complete_json(_BATCH_SYSTEM, f"Ссылки:\n{block}", max_tokens=min(400 + 150 * len(unclear), 4000))
+            out = await llm.complete_json(_BATCH_SYSTEM, f"Ссылки:\n{block}", max_tokens=min(400 + 150 * len(unclear), 4000), role="extract")
             by_n = {r.n: r for r in unclear}
             for item in out.get("refs") or []:
                 try:

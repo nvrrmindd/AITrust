@@ -19,9 +19,14 @@ class LLMError(Exception):
 
 
 class RateLimited(LLMError):
-    def __init__(self, msg: str, wait: float):
+    def __init__(self, msg: str, wait: float, daily: bool = False):
         super().__init__(msg)
         self.wait = wait
+        self.daily = daily  # the model's daily quota is gone: waiting won't help, switch models
+
+
+# models whose daily free-tier quota ran out in this process (reset on restart)
+_exhausted: set[str] = set()
 
 
 # Free tiers (Groq: 8k tokens/min) choke on parallel judge calls; keep a small queue.
@@ -41,7 +46,10 @@ def _retry_after(r: httpx.Response) -> float:
 
 def _raise_for(r: httpx.Response) -> None:
     if r.status_code == 429:
-        raise RateLimited(f"LLM HTTP 429: {r.text[:300]}", _retry_after(r))
+        daily = bool(re.search(r"PerDay|per day|\(TPD\)|\(RPD\)", r.text, re.I))
+        raise RateLimited(f"LLM HTTP 429: {r.text[:300]}", _retry_after(r), daily)
+    if r.status_code in (500, 502, 503, 504):  # "model is experiencing high demand" — transient, wait and retry
+        raise RateLimited(f"LLM HTTP {r.status_code}: {r.text[:300]}", 4.0)
     if r.status_code >= 400:
         raise LLMError(f"LLM HTTP {r.status_code}: {r.text[:300]}")
 
@@ -65,44 +73,70 @@ def _extract_json(text: str) -> Any:
         raise LLMError(f"bad JSON from model: {e}") from e
 
 
-async def complete_json(system: str, user: str, *, max_tokens: int = 2000) -> Any:
+def models_for(role: str) -> list[str]:
+    """LLM_MODEL_JUDGE / LLM_MODEL_EXTRACT may list fallbacks: "gemini-3.8-flash,gemini-flash-latest"."""
+    spec = {"extract": settings.llm_model_extract, "judge": settings.llm_model_judge}.get(role, settings.llm_model)
+    return [m.strip() for m in spec.split(",") if m.strip()]
+
+
+def model_for(role: str) -> str:
+    chain = models_for(role)
+    return next((m for m in chain if m not in _exhausted), chain[-1])
+
+
+async def complete_json(system: str, user: str, *, max_tokens: int = 2000, role: str = "judge") -> Any:
+    """role: "extract" (parsing, fast model) or "judge" (verdicts, strongest model)."""
     if not settings.llm_api_key:
         raise LLMError("LLM_API_KEY is not set")
     last: Exception | None = None
-    for attempt in range(12):  # 429 waits are cheap; other errors stop after 3
+    failures = 0
+    for _ in range(16):  # 429/503 waits are cheap; other errors stop after 3
+        model = model_for(role)
         try:
             async with _sem:
                 if settings.llm_provider == "anthropic":
-                    text = await _anthropic(system, user, max_tokens)
+                    text = await _anthropic(system, user, max_tokens, model)
                 else:
-                    text = await _openai_compatible(system, user, max_tokens)
+                    text = await _openai_compatible(system, user, max_tokens, model, role)
             data = _extract_json(text)
             if not isinstance(data, dict):
                 raise LLMError(f"expected a JSON object, got {type(data).__name__}")
             return data
         except RateLimited as e:
             last = e
-            log.warning("LLM rate limited, waiting %.1fs", e.wait)
+            if e.daily:
+                _exhausted.add(model)
+                nxt = model_for(role)
+                if nxt in _exhausted:
+                    break  # every model of the chain is out for today
+                log.warning("LLM %s: daily quota exhausted, switching to %s", model, nxt)
+                continue
+            log.warning("LLM %s rate limited, waiting %.1fs", model, e.wait)
             await asyncio.sleep(e.wait + 0.5)
         except (httpx.HTTPError, LLMError) as e:
             last = e
-            log.warning("LLM attempt %s failed: %s", attempt + 1, e)
-            if attempt >= 2:
+            failures += 1
+            log.warning("LLM %s attempt %s failed: %s", model, failures, e)
+            if failures >= 3:
                 break
     raise LLMError(str(last))
 
 
-async def _openai_compatible(system: str, user: str, max_tokens: int) -> str:
+async def _openai_compatible(system: str, user: str, max_tokens: int, model: str, role: str) -> str:
     payload = {
-        "model": settings.llm_model,
+        "model": model,
         "temperature": 0,
         "max_tokens": max_tokens,
         "response_format": {"type": "json_object"},
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
     }
-    if "gpt-oss" in settings.llm_model:
+    if "gpt-oss" in model:
         # Reasoning model: keep thinking short so it doesn't eat the max_tokens budget.
         payload["reasoning_effort"] = "low"
+    elif model.startswith("gemini"):
+        # Gemini thinks by default and thinking counts against max_tokens: parse fast, let the judge think.
+        payload["reasoning_effort"] = "low" if role == "extract" else "medium"
+        payload["max_tokens"] = max_tokens + 8192
     async with httpx.AsyncClient(timeout=90) as c:
         r = await c.post(
             settings.llm_base_url.rstrip("/") + "/chat/completions",
@@ -113,9 +147,9 @@ async def _openai_compatible(system: str, user: str, max_tokens: int) -> str:
     return r.json()["choices"][0]["message"]["content"]
 
 
-async def _anthropic(system: str, user: str, max_tokens: int) -> str:
+async def _anthropic(system: str, user: str, max_tokens: int, model: str) -> str:
     payload = {
-        "model": settings.llm_model,
+        "model": model,
         "max_tokens": max_tokens,
         "temperature": 0,
         "system": system + "\n\nОтвечай ТОЛЬКО валидным JSON без пояснений.",

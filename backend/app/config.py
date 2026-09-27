@@ -30,12 +30,14 @@ _DEFAULT_MODELS = {
     "anthropic": "claude-haiku-4-5",
     "groq": "openai/gpt-oss-120b",
     "openrouter": "openai/gpt-4o-mini",
+    "gemini": "gemini-3.7-flash",
 }
 _DEFAULT_BASE = {
     "openai": "https://api.openai.com/v1",
     "groq": "https://api.groq.com/openai/v1",
     "openrouter": "https://openrouter.ai/api/v1",
     "anthropic": "https://api.anthropic.com",
+    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai",
 }
 
 
@@ -45,6 +47,10 @@ class Settings:
     llm_api_key: str = field(default_factory=lambda: _env("LLM_API_KEY"))
     llm_model: str = field(default_factory=lambda: _env("LLM_MODEL"))
     llm_base_url: str = field(default_factory=lambda: _env("LLM_BASE_URL"))
+    # a fast model for parsing, the strongest one for verdicts (both default to LLM_MODEL)
+    llm_model_extract: str = field(default_factory=lambda: _env("LLM_MODEL_EXTRACT"))
+    llm_model_judge: str = field(default_factory=lambda: _env("LLM_MODEL_JUDGE"))
+    gemini_api_key: str = field(default_factory=lambda: _env("GEMINI_API_KEY"))
     tavily_api_key: str = field(default_factory=lambda: _env("TAVILY_API_KEY"))
     contact_email: str = field(default_factory=lambda: _env("CONTACT_EMAIL", "pruf@example.com"))
     data_dir: Path = field(default_factory=lambda: Path(_env("DATA_DIR", str(Path(__file__).resolve().parent.parent / "data"))))
@@ -56,8 +62,12 @@ class Settings:
     http_timeout: float = field(default_factory=lambda: float(_env("HTTP_TIMEOUT", "12")))
 
     def __post_init__(self) -> None:
+        if self.llm_provider == "gemini" and self.gemini_api_key:
+            self.llm_api_key = self.gemini_api_key  # LLM_API_KEY may still hold another provider's key
         if not self.llm_model:
             self.llm_model = _DEFAULT_MODELS.get(self.llm_provider, "gpt-4o-mini")
+        self.llm_model_extract = self.llm_model_extract or self.llm_model
+        self.llm_model_judge = self.llm_model_judge or self.llm_model
         if self.llm_concurrency <= 0:
             self.llm_concurrency = 1 if self.llm_provider == "groq" else 4
         if not self.llm_base_url:
