@@ -100,6 +100,9 @@ async def _judge_one_source(claim: Claim, cit: Citation, sc: SourceCheck, st: So
     # deterministic number check over the quote + the best passages
     context = " ".join([quote] + selected[:2]) if quote_ok else " ".join(selected[:2])
     cn, sn, mismatch = number_mismatch(claim.text, context)
+    if mismatch:
+        # a number is "changed" only if it appears NOWHERE in the source — not just outside the best passages
+        mismatch = number_mismatch(claim.text, st.text)[2]
     numbers = NumberCheck(claim_numbers=cn, source_numbers=sn[:12], mismatch=mismatch) if cn else None
 
     if verdict in ("supports", "partially", "contradicts") and not quote_ok:

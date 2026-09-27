@@ -20,7 +20,7 @@ from pathlib import Path
 from .config import settings
 from .i18n import LANG, norm_lang
 from .pipeline import run
-from .store import text_key
+from .store import _transient, text_key
 
 ROOT = Path(__file__).resolve().parent.parent
 SEED = ROOT / "seed_cache"
@@ -66,6 +66,9 @@ async def main() -> None:
                 print(f"  {c['citation_id']}: {c['status']:<12} {c['detail'][:110]}")
             elif ev["type"] == "done":
                 print("  =>", ev["summary"]["headline"], f"({ev['summary']['duration_ms']} ms)")
+        if _transient(events):
+            print("  NOT SAVED: temporary failures (quota / busy database) — rerun later")
+            continue
         payload = json.dumps(events, ensure_ascii=False)
         key = text_key(ex["text"], "", lang)
         (SEED / f"{key}.json").write_text(payload, encoding="utf-8")
@@ -97,6 +100,9 @@ async def _prewarm_docx() -> None:
             print(f"  {r['claim_id']}: {r['verdict']:<15} {r['reason'][:110]}")
         elif ev["type"] == "done":
             print("  =>", ev["summary"]["headline"], f"({ev['summary']['duration_ms']} ms)")
+    if _transient(events):
+        print("  NOT SAVED: temporary failures (quota / busy database) — rerun later")
+        return
     _save(text_key(text, "document", LANG.get()), events)
 
 

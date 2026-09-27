@@ -415,3 +415,16 @@ def test_messages_follow_the_check_language():
 def test_cache_key_keeps_russian_and_separates_other_languages():
     from app.store import text_key
     assert text_key("abc") == text_key("abc", "", "ru") != text_key("abc", "", "en") != text_key("abc", "", "kk")
+
+
+def test_number_elsewhere_in_source_is_not_a_mismatch(monkeypatch):
+    from app.judge import judge_cited
+    filler = " ".join(f"Unrelated sentence number {i} about search engines and citations." for i in range(40))
+    source = ("Grok-3 Search had the highest failure rate at 94% of queries. " + filler +
+              " Perplexity had the lowest failure rate, answering incorrectly 37% of the time.")
+    _patch_llm(monkeypatch, {"verdict": "supports", "reason": "ok", "quote": "Grok-3 Search had the highest failure rate at 94% of queries"})
+    cit = Citation(id="S1", kind="web", url="https://x.org")
+    sc = SourceCheck(citation_id="S1", status="exists", method="http", detail="", text_scope="full")
+    cl = Claim(id="C1", text="Grok 3 ошибался в 94% запросов, а Perplexity — в 37%", citation_ids=["S1"])
+    r = asyncio.run(judge_cited(cl, [cit], {"S1": sc}, {"S1": SourceText(source, "full", "https://x.org")}))
+    assert r.verdict == "supported"
