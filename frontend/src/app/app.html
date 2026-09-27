@@ -25,11 +25,6 @@
 
 <header class="topbar">
   <a class="brand" href="/" (click)="$event.preventDefault(); reset()">
-    <span class="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="#2a1245"/>
-        <path d="M11.5 12.2a4.6 4.6 0 1 1 6.4 4.2c-1.3.6-1.9 1.4-1.9 2.8v.8" stroke="#cdb8ff" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <circle cx="16" cy="24.3" r="1.9" fill="#cdb8ff"/></svg>
-    </span>
     <span class="brand-name">Trustable<span class="brand-q">?</span></span>
   </a>
   <nav class="topnav">
@@ -50,15 +45,16 @@
     </div>
     <section class="hero">
       <div class="hero-copy">
-        <h1>Этому тексту <span class="marker">можно верить?</span></h1>
+        <p class="hero-kicker">Можно ли верить ответу ИИ?</p>
+        <h1 class="wordmark">Trustable<span class="wm-q">?</span></h1>
         <p class="lede">
-          Trustable? находит в тексте каждое утверждение, открывает источник и показывает, что там написано на самом деле, —
-          дословной цитатой. Подходит для любого текста: ответа нейросети, статьи, новости, реферата, курсовой.
+          Вставьте ответ ChatGPT, Gemini, Claude или любой другой нейросети. Trustable? разберёт его на утверждения,
+          откроет каждый источник и покажет, что там написано на самом деле, — дословной цитатой.
         </p>
         <ul class="hero-points">
-          <li><span class="hp-mark" aria-hidden="true">✓</span>Существует ли источник, проверяют мировые реестры публикаций, а не нейросеть</li>
-          <li><span class="hp-mark" aria-hidden="true">✓</span>Цифры сравнивает код: 40% и 60% — не одно и то же</li>
-          <li><span class="hp-mark" aria-hidden="true">✓</span>Нет источника — ищем и подтверждения, и опровержения</li>
+          <li><span class="hp-mark" aria-hidden="true">✓</span>Существует ли источник, проверяют мировые реестры публикаций</li>
+          <li><span class="hp-mark" aria-hidden="true">✓</span>Цифры сравнивает код</li>
+          <li><span class="hp-mark" aria-hidden="true">✓</span>Нет источника? Ищем и подтверждения, и опровержения</li>
         </ul>
         <button class="primary" type="button" (click)="scrollToId('check')">Проверить текст</button>
       </div>
@@ -91,7 +87,12 @@
     <section class="trust-strip" aria-label="Источники проверки">
       <span class="ts-label">Проверяем по открытым источникам</span>
       <ul>
-        <li>doi.org</li><li>Crossref</li><li>OpenAlex</li><li>Wikipedia</li><li>сайт первоисточника</li><li>веб-поиск</li>
+        <li><a href="https://www.doi.org" target="_blank" rel="noopener">doi.org</a></li>
+        <li><a href="https://www.crossref.org" target="_blank" rel="noopener">Crossref</a></li>
+        <li><a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a></li>
+        <li><a href="https://www.wikipedia.org" target="_blank" rel="noopener">Wikipedia</a></li>
+        <li><a href="https://tavily.com" target="_blank" rel="noopener">веб-поиск</a></li>
+        <li><button type="button" (click)="scrollToId('who-checks')">сайт первоисточника</button></li>
       </ul>
     </section>
 
@@ -114,8 +115,7 @@
           <span class="dz-sub">курсовая, статья, эссе, отчёт, любой документ · .docx, .pdf, .txt, .md · до 10 МБ</span>
           <span class="dz-pick">или выберите файл</span>
         </label>
-        <p class="hint">Есть список литературы — проверим каждый источник и утверждения, которые на него ссылаются ([1], [2, с. 15], (Иванов, 2020)).
-          Нет списка — проверим утверждения в тексте, как обычный текст.</p>
+        <p class="hint">Проверим каждый источник и утверждения, которые на него ссылаются.</p>
         <div class="composer-foot">
           <button class="ghost" type="button" (click)="runSample()" [disabled]="uploading()">Попробовать на примере (DOCX)</button>
         </div>
@@ -152,37 +152,39 @@
       }
     </section>
 
-    <section class="who-checks band">
+    <section id="who-checks" class="who-checks band">
+      <svg class="chrome c-band-splat" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
+      <svg class="chrome c-band-drop" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-drop" fill="url(#chrome)"/><use href="#p-drop" fill="url(#irid)"/></g></svg>
       <h2 class="section-title">Кто на самом деле проверяет</h2>
       <p class="section-sub">Нейросеть у нас не выносит приговор. Она только находит в источнике нужное место. Решают реестры и код.</p>
       <div class="checker-grid">
         <div class="checker">
-          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="6" width="26" height="28" rx="3"/><path d="M13 14h14M13 20h14M13 26h8"/><circle cx="29" cy="29" r="6" class="fill-marker"/><path d="M26.5 29l2 2 3.5-4"/></svg>
+          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5 1 0 2-.1 2.8-.2"/><circle cx="18.5" cy="18.5" r="3.5" class="i-fill"/><path d="M16.9 18.5l1.1 1.1 2-2.2" class="i-ok"/></svg></span>
           <h3>Мировые реестры публикаций</h3>
           <p>doi.org, Crossref, OpenAlex — сотни миллионов научных работ. Нет в реестрах — значит, ссылку выдумали.</p>
         </div>
         <div class="checker">
-          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="8" width="30" height="24" rx="3"/><path d="M5 14h30"/><circle cx="9" cy="11" r=".8"/><circle cx="12" cy="11" r=".8"/><path d="M11 20h12M11 25h18" /><rect x="10" y="18.5" width="9" height="3" class="fill-marker" stroke="none"/></svg>
+          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 8.5h18"/><circle cx="6" cy="6.3" r=".6" class="i-dot"/><circle cx="8.2" cy="6.3" r=".6" class="i-dot"/><path d="M7 12.5h10M7 16h6"/><rect x="6.4" y="11.2" width="7" height="2.6" rx="1" class="i-hl"/></svg></span>
           <h3>Сам источник</h3>
           <p>Открываем страницу, PDF или аннотацию статьи и читаем, что там написано. Закрыт пейволом — честно пишем «нет доступа».</p>
         </div>
         <div class="checker">
-          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 12h10v10H8zM22 12h10v10H22z"/><path d="M18 22c0 5-3 8-7 9M32 22c0 5-3 8-7 9"/><path d="M14 34l3 3 6-6" class="stroke-green"/></svg>
+          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5c0-1.4 1.1-2.5 2.5-2.5H8v4.5H4.5"/><path d="M4.5 9.5c0 2.6-.6 4.2-2 5"/><path d="M12 7.5c0-1.4 1.1-2.5 2.5-2.5H16v4.5h-3.5"/><path d="M12.5 9.5c0 2.6-.6 4.2-2 5"/><path d="M14.5 17l2.3 2.3 4.7-5" class="i-ok"/></svg></span>
           <h3>Сверка цитаты кодом</h3>
           <p>Цитата, которую принесла нейросеть, должна дословно найтись в источнике. Не нашлась — вердикт выбрасывается.</p>
         </div>
         <div class="checker">
-          <svg viewBox="0 0 40 40" aria-hidden="true"><text x="5" y="19" class="svg-num">40%</text><text x="21" y="33" class="svg-num">60%</text><path d="M5 16l14-5" class="stroke-red"/><path d="M8 26h8M12 22v8" /></svg>
+          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="16" rx="2"/><rect x="13" y="4" width="8" height="16" rx="2"/><path d="M5.5 9h3M5.5 12h3" /><path d="M15.5 9h3M15.5 12h3"/><path d="M5.5 16h3" class="i-bad"/><path d="M15.5 16h3" class="i-ok"/></svg></span>
           <h3>Сравнение чисел</h3>
           <p>Числа из текста и из источника сравниваются автоматически. Подменённую цифру видно сразу.</p>
         </div>
         <div class="checker">
-          <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="17" cy="17" r="10"/><path d="M24.5 24.5L34 34"/><path d="M12 17h10"/></svg>
+          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.3 15.3L21 21"/><path d="M8 8.5l5 4M13 8.5l-5 4" class="i-bad"/></svg></span>
           <h3>Поиск опровержений</h3>
           <p>Если источник не указан, ищем в интернете не только подтверждения, но и опровержения. Надёжные сайты весят больше.</p>
         </div>
         <div class="checker">
-          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 5h14l6 6v24H10z"/><path d="M24 5v6h6"/><rect x="14" y="19" width="10" height="10" rx="1"/><path d="M16 21h2v2h-2zM20 25h2v2h-2z" class="fill-ink"/></svg>
+          <span class="checker-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h8.5L19 7.5V21H6z"/><path d="M14.5 3v4.5H19"/><rect x="8.5" y="11" width="3" height="3" rx=".5"/><rect x="13.5" y="11" width="3" height="3" rx=".5"/><rect x="8.5" y="16" width="3" height="3" rx=".5"/><path d="M13.5 16h1.5v1.5M16.5 16v3h-3" class="i-hl-stroke"/></svg></span>
           <h3>Отчёт, который можно перепроверить</h3>
           <p>PDF с датой и QR-кодом: по нему любой откроет исходную проверку со всеми цитатами и ссылками.</p>
         </div>
@@ -190,6 +192,8 @@
     </section>
 
     <section class="steps">
+      <svg class="chrome c-steps-dot1" viewBox="0 0 140 140" aria-hidden="true"><g filter="url(#gloss)"><circle cx="70" cy="70" r="36" fill="url(#chrome)"/></g></svg>
+      <svg class="chrome c-steps-dot2" viewBox="0 0 140 140" aria-hidden="true"><g filter="url(#gloss)"><circle cx="70" cy="70" r="36" fill="url(#chrome)"/></g></svg>
       <h2 class="section-title">Как это работает</h2>
       <ol class="step-list">
         <li class="step">
@@ -211,6 +215,7 @@
     </section>
 
     <section class="audience">
+      <svg class="chrome c-aud-drop" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-drop" fill="url(#chrome)"/><use href="#p-drop" fill="url(#irid)"/></g></svg>
       <h2 class="section-title">Кому пригодится</h2>
       <div class="audience-grid">
         <div class="aud">
@@ -229,6 +234,7 @@
     </section>
 
     <section class="faq">
+      <svg class="chrome c-faq-splat" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
       <h2 class="section-title">Частые вопросы</h2>
       @for (q of faq; track $index) {
         <div class="faq-item" [class.is-open]="openFaq() === $index">
@@ -601,11 +607,6 @@
   <div class="sf-inner">
     <div class="sf-brand">
       <a class="brand" href="/" (click)="$event.preventDefault(); reset()">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32" width="26" height="26"><rect width="32" height="32" rx="8" fill="#2a1245"/>
-            <path d="M11.5 12.2a4.6 4.6 0 1 1 6.4 4.2c-1.3.6-1.9 1.4-1.9 2.8v.8" stroke="#cdb8ff" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <circle cx="16" cy="24.3" r="1.9" fill="#cdb8ff"/></svg>
-        </span>
         <span class="brand-name">Trustable<span class="brand-q">?</span></span>
       </a>
       <p>Проверка текстов по источникам: цитата вместо «доверьтесь нам».</p>

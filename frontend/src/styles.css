@@ -541,3 +541,57 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
   .chrome, .chrome-bg { display: none !important; }
   * { animation: none !important; }
 }
+
+/* ================================================================ wordmark hero, icons, clickable sources, more chrome */
+.hero-kicker { margin: 0 0 4px; font: 600 clamp(18px, 2vw, 22px)/1.3 var(--sans); color: var(--accent); letter-spacing: -0.01em; }
+.intro h1.wordmark {
+  font: 800 clamp(60px, 7.4vw, 112px)/.95 var(--sans); letter-spacing: -0.055em; color: var(--plum);
+  margin: 0 0 22px; white-space: nowrap;
+}
+.wm-q { display: inline-block; color: var(--accent); transform-origin: 50% 85%; animation: rise .7s .2s both, q-swing 4.5s 1.2s ease-in-out infinite; }
+@keyframes q-swing { 0%, 100% { rotate: 0deg; } 8% { rotate: 12deg; } 16% { rotate: -8deg; } 24% { rotate: 4deg; } 32% { rotate: 0deg; } }
+.hero-kicker { animation: rise .6s both; }
+
+.trust-strip a, .trust-strip button {
+  font: 600 17px/1 var(--serif); color: var(--ink-2); text-decoration: none; background: none; border: 0; padding: 0;
+  border-bottom: 1.5px solid transparent; transition: color .2s, border-color .2s;
+}
+.trust-strip a:hover, .trust-strip button:hover { color: var(--accent); border-bottom-color: var(--lil-line-strong); }
+.trust-strip a::after { content: '↗'; font: 500 12px var(--sans); margin-left: 3px; color: var(--ink-3); vertical-align: 3px; }
+
+.checker-ico {
+  display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; margin-bottom: 14px;
+  background: linear-gradient(150deg, #ffffff 0%, #ebe0ff 100%); border: 1px solid var(--lil-line);
+  box-shadow: 0 8px 18px -12px rgba(106, 69, 214, .55); transition: transform .35s cubic-bezier(.2, .8, .2, 1);
+}
+.checker .checker-ico svg { width: 28px; height: 28px; margin: 0; fill: none; stroke: var(--plum); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transform: none; }
+.checker:hover .checker-ico { transform: rotate(-6deg) scale(1.08); }
+.checker:hover .checker-ico svg { transform: none; }
+.checker-ico .i-ok { stroke: var(--green-ln); stroke-width: 2; }
+.checker-ico .i-bad { stroke: var(--red-ln); stroke-width: 2; }
+.checker-ico .i-fill { fill: #fff; stroke: var(--green-ln); }
+.checker-ico .i-dot { fill: var(--plum); stroke: none; }
+.checker-ico .i-hl { fill: #dccbff; stroke: none; }
+.checker-ico .i-hl-stroke { stroke: var(--accent); }
+
+.who-checks, .steps, .audience, .faq { position: relative; }
+.who-checks > :not(.chrome), .steps > :not(.chrome), .audience > :not(.chrome), .faq > :not(.chrome) { position: relative; z-index: 1; }
+.band { overflow: hidden; }
+.c-band-splat { width: 320px; right: calc(50% - 50vw - 70px); top: -80px; animation: float-rot 13s ease-in-out infinite; }
+.c-band-drop { width: 210px; left: calc(50% - 50vw - 60px); bottom: -30px; transform: rotate(160deg); animation: float 9s 1s ease-in-out infinite; }
+.c-steps-dot1 { width: 84px; right: 6%; top: -18px; animation: float 6.5s ease-in-out infinite; }
+.c-steps-dot2 { width: 54px; right: 1%; top: 58px; animation: float 5.5s .8s ease-in-out infinite; }
+.c-aud-drop { width: 230px; right: -130px; top: -70px; transform: rotate(200deg); animation: float 8s .4s ease-in-out infinite; }
+.c-faq-splat { width: 280px; right: -330px; top: 30px; animation: float-rot 12s 1s ease-in-out infinite; }
+@media (max-width: 960px) {
+  .c-faq-splat, .c-aud-drop, .c-steps-dot2 { display: none; }
+}
+@media (max-width: 720px) {
+  .intro h1.wordmark { font-size: clamp(54px, 17vw, 80px); }
+  .c-band-splat { width: 200px; right: -80px; top: -60px; opacity: .8; }
+  .c-band-drop { display: none; }
+  .c-steps-dot1 { width: 56px; right: 2%; }
+}
+.hero { grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); }
+.hero-copy { z-index: 2; }
+@media (max-width: 960px) { .hero { grid-template-columns: 1fr; } }
