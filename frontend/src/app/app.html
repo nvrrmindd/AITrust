@@ -182,7 +182,7 @@
         <figure class="chart">
           <figcaption>
             <h3>Опрос студентов</h3>
-            <p>Опрос идёт; сейчас {{ survey.n }} ответов</p>
+            <p>{{ survey.n }} студентов, сентябрь 2026</p>
           </figcaption>
           <ul class="hbars" role="list">
             @for (b of survey.rows; track b.label) {
@@ -193,7 +193,7 @@
               </li>
             }
           </ul>
-          <p class="chart-note">Самое важное: ИИ используют все, а источники всегда проверяет только один из одиннадцати.</p>
+          <p class="chart-note">Источники у ИИ просят 49 из 56, но всегда проверяют их только 10. А о наказаниях за выдуманные ссылки знают 51.</p>
         </figure>
 
         <figure class="chart">
@@ -252,6 +252,13 @@
       </ul>
     </section>
 
+    <section class="cta">
+      <svg class="chrome c-cta" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
+      <h2>Прежде чем поверить — проверьте.</h2>
+      <p>Вставьте текст или загрузите документ. Первые утверждения загорятся через несколько секунд.</p>
+      <button class="primary" type="button" (click)="scrollToId('check')">Проверить текст</button>
+    </section>
+
     <section class="faq">
       <svg class="chrome c-faq-splat" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
       <h2 class="section-title">Частые вопросы</h2>
@@ -265,12 +272,6 @@
       }
     </section>
 
-    <section class="cta">
-      <svg class="chrome c-cta" viewBox="-40 -40 480 480" aria-hidden="true"><g filter="url(#gloss)"><use href="#p-splat" fill="url(#chrome)"/><use href="#p-splat" fill="url(#irid)"/></g></svg>
-      <h2>Прежде чем поверить — проверьте.</h2>
-      <p>Вставьте текст или загрузите документ. Первые утверждения загорятся через несколько секунд.</p>
-      <button class="primary" type="button" (click)="scrollToId('check')">Проверить текст</button>
-    </section>
   </main>
 }
 

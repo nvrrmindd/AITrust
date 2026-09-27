@@ -44,13 +44,14 @@ export class App implements OnInit, OnDestroy {
     { who: 'you', title: 'Решение за вами', text: 'Вердикт, объяснение, цитата и ссылка на экране — проверить нас можно за пять секунд. Отчёт — в PDF с QR-кодом.', out: 'Подтверждено цитатой', tone: 'green' },
   ];
   readonly survey = {
-    n: 11,
+    n: 56,
     rows: [
-      { label: 'Используют ИИ для учёбы', value: 11, key: false },
-      { label: 'Просили у ИИ источники', value: 10, key: false },
-      { label: 'Находили выдуманную ссылку или цифру', value: 8, key: false },
-      { label: 'Знают случаи наказания за выдуманные источники', value: 11, key: false },
-      { label: 'Всегда проверяют источники', value: 1, key: true },
+      { label: 'Используют ИИ для учёбы хотя бы раз в неделю', value: 53, key: false },
+      { label: 'Воспользовались бы сервисом проверки', value: 54, key: false },
+      { label: 'Знают случаи наказания за выдуманные источники', value: 51, key: false },
+      { label: 'Просили у ИИ источники или статистику', value: 49, key: false },
+      { label: 'Ни разу не проверяли ответ ИИ на выдумки', value: 29, key: false },
+      { label: 'Всегда проверяют, что источник существует', value: 10, key: true },
     ],
   };
   readonly bench = [

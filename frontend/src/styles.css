@@ -700,3 +700,14 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
   .stair { --step: 12px; }
   .persona { grid-template-columns: 1fr; gap: 8px; }
 }
+
+/* compact personas; CTA now sits before the FAQ */
+.audience { margin-top: 80px; }
+.audience .section-title { font-size: clamp(22px, 2.6vw, 28px); }
+.personas { margin-top: 12px; }
+.persona { grid-template-columns: 200px minmax(0, 1fr) auto; gap: 20px; padding: 14px 10px; }
+.persona:hover { padding-left: 16px; }
+.p-who { font-size: clamp(18px, 1.8vw, 21px); }
+.persona p { font-size: 15px; }
+.p-go { font-size: 14.5px; }
+.cta { margin-top: 80px; }
