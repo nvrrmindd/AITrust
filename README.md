@@ -170,19 +170,6 @@ eval.py           метрики точности на размеченных н
 
 ---
 
-## Быстрый старт
-
-```bash
-python3 -m venv .venv && .venv/bin/pip install -r backend/requirements-dev.txt
-cp .env.example .env         # GEMINI_API_KEY и GROQ_API_KEY (бесплатные), по желанию TAVILY_API_KEY, OPENALEX_API_KEY, SUPPORT_EMAIL
-cd backend && ../.venv/bin/python -m pytest -q     # 63 теста, сеть не нужна
-cd .. && make run            # соберёт фронт при первом запуске → http://localhost:8000
-```
-
-- `python -m app.prewarm [honest mixed coursework kazakhstan docx]` — прогнать демо по-настоящему и сохранить в `backend/seed_cache/` (коммитится; на сервере демо открываются мгновенно и не тратят лимиты).
-- `python -m app.eval [--only claims|hard|refs] [--limit N] [--fresh]` — метрики точности.
-- `python examples/make_sample_docx.py` — пересобрать пример курсовой в DOCX.
-
 ### Деплой (Render, бесплатно, один URL)
 Render → New → Blueprint → этот репозиторий (`render.yaml`, сборка по `Dockerfile`). Проверка: `/api/health` → `"llm_configured": true`. Бесплатный Render засыпает через 15 минут простоя — откройте ссылку заранее.
 
@@ -198,7 +185,7 @@ Render → New → Blueprint → этот репозиторий (`render.yaml`,
 
 ---
 
-## Ограничения (честно)
+## Ограничения 
 
 - Проверяем проверяемое: факты, числа, даты, источники. Мнения, советы, личные данные и код — нет.
 - Смысловое «подтверждает ли цитата утверждение» оценивает нейросеть; она может ошибиться в «одно ли это и то же» — поэтому цитата **всегда** на экране, последнее слово за человеком.
@@ -210,4 +197,3 @@ Render → New → Blueprint → этот репозиторий (`render.yaml`,
 
 ---
 
-Материалы для питча — [`docs/PITCH.md`](docs/PITCH.md): цифры, ответы жюри, слайды, сценарий видео, промпт для презентации.
